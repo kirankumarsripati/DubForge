@@ -1,0 +1,22 @@
+{
+  "segmentCount": 2,
+  "totalDurationMs": 5000,
+  "segments": [
+    {
+      "id": "seg-hello",
+      "startMs": 0,
+      "endMs": 2500
+    },
+    {
+      "id": "seg-golden",
+      "startMs": 2500,
+      "endMs": 5000
+    }
+  ],
+  "artifactKeys": [
+    "alignment-plan:hi",
+    "alignedSpeech:hi",
+    "composedAudio:hi",
+    "audio-composition:hi"
+  ]
+}

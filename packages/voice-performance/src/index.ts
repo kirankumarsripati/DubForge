@@ -45,10 +45,7 @@ export {
 export { VoicePerformanceRepository } from './repository/voice-performance-repository.js';
 
 export { VoicePerformanceApplication } from './application/voice-performance-application.js';
-export {
-  SynthesizeSpeechService,
-  AlignSpeechService,
-} from './application/voice-performance-services.js';
+export { SynthesizeSpeechService } from './application/voice-performance-services.js';
 
 export { VoicePerformanceDiagnostics } from './diagnostics/voice-performance-diagnostics.js';
 
@@ -57,10 +54,7 @@ export {
   VOICE_PERFORMANCE_NODE_KINDS,
   isVoicePerformanceNodeKind,
 } from './integration/voice-performance-execution-adapter.js';
-export {
-  createPlatformAdapterRegistry,
-  resolveGoldenFixturePath,
-} from './integration/adapter-registry.js';
+export { resolveGoldenFixturePath } from './integration/adapter-registry.js';
 
 export {
   createVoicePerformancePlatform,

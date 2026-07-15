@@ -1,20 +1,21 @@
-import { createDomainEventId, VOICE_PERFORMANCE_EVENTS } from '@dubforge/platform-events';
+import { createDomainEventId, TEMPORAL_EVENTS } from '@dubforge/platform-events';
 import type { DomainEventBus } from '@dubforge/platform-events';
 
-import type { VoicePerformance } from '../domain/voice-performance.js';
-import type { VoicePerformanceOperationRecord } from '../repository/voice-performance-repository.js';
+import type { AlignmentPlan } from '../domain/alignment-plan.js';
+import type { AudioComposition } from '../domain/audio-composition.js';
+import type { TemporalOperationRecord } from '../repository/temporal-repository.js';
 
-export function publishVoicePerformanceOperationStarted(input: {
+export function publishTemporalOperationStarted(input: {
   readonly eventBus: DomainEventBus;
   readonly workflowId: string;
   readonly jobId: string;
   readonly nodeId: string;
-  readonly operation: VoicePerformanceOperationRecord;
+  readonly operation: TemporalOperationRecord;
 }): void {
   input.eventBus.publish({
     id: createDomainEventId(),
     timestamp: new Date().toISOString(),
-    type: VOICE_PERFORMANCE_EVENTS.OPERATION_STARTED,
+    type: TEMPORAL_EVENTS.OPERATION_STARTED,
     workflowId: input.workflowId,
     jobId: input.jobId,
     nodeId: input.nodeId,
@@ -24,18 +25,18 @@ export function publishVoicePerformanceOperationStarted(input: {
   });
 }
 
-export function publishVoicePerformanceOperationCompleted(input: {
+export function publishTemporalOperationCompleted(input: {
   readonly eventBus: DomainEventBus;
   readonly workflowId: string;
   readonly jobId: string;
   readonly nodeId: string;
-  readonly operation: VoicePerformanceOperationRecord;
+  readonly operation: TemporalOperationRecord;
   readonly artifactPath: string;
 }): void {
   input.eventBus.publish({
     id: createDomainEventId(),
     timestamp: new Date().toISOString(),
-    type: VOICE_PERFORMANCE_EVENTS.OPERATION_COMPLETED,
+    type: TEMPORAL_EVENTS.OPERATION_COMPLETED,
     workflowId: input.workflowId,
     jobId: input.jobId,
     nodeId: input.nodeId,
@@ -47,18 +48,18 @@ export function publishVoicePerformanceOperationCompleted(input: {
   });
 }
 
-export function publishVoicePerformanceOperationFailed(input: {
+export function publishTemporalOperationFailed(input: {
   readonly eventBus: DomainEventBus;
   readonly workflowId: string;
   readonly jobId: string;
   readonly nodeId: string;
-  readonly operation: VoicePerformanceOperationRecord;
+  readonly operation: TemporalOperationRecord;
   readonly message: string;
 }): void {
   input.eventBus.publish({
     id: createDomainEventId(),
     timestamp: new Date().toISOString(),
-    type: VOICE_PERFORMANCE_EVENTS.OPERATION_FAILED,
+    type: TEMPORAL_EVENTS.OPERATION_FAILED,
     workflowId: input.workflowId,
     jobId: input.jobId,
     nodeId: input.nodeId,
@@ -69,41 +70,74 @@ export function publishVoicePerformanceOperationFailed(input: {
   });
 }
 
-export function publishVoicePerformanceSynthesized(input: {
+export function publishAlignmentPlanCreated(input: {
   readonly eventBus: DomainEventBus;
   readonly workflowId: string;
   readonly jobId: string;
   readonly nodeId: string;
-  readonly performance: VoicePerformance;
+  readonly plan: AlignmentPlan;
   readonly artifactPath: string;
 }): void {
   input.eventBus.publish({
     id: createDomainEventId(),
     timestamp: new Date().toISOString(),
-    type: VOICE_PERFORMANCE_EVENTS.SYNTHESIZED,
+    type: TEMPORAL_EVENTS.ALIGNMENT_PLANNED,
     workflowId: input.workflowId,
     jobId: input.jobId,
     nodeId: input.nodeId,
-    performanceId: input.performance.id,
-    languageCode: input.performance.languageCode,
-    segmentCount: input.performance.segments.length,
+    planId: input.plan.id,
+    languageCode: input.plan.languageCode,
+    segmentCount: input.plan.segments.length,
     artifactPath: input.artifactPath,
   });
 
   input.eventBus.publish({
     id: createDomainEventId(),
     timestamp: new Date().toISOString(),
-    type: VOICE_PERFORMANCE_EVENTS.ARTIFACT_PRODUCED,
+    type: TEMPORAL_EVENTS.ARTIFACT_PRODUCED,
     workflowId: input.workflowId,
     jobId: input.jobId,
     nodeId: input.nodeId,
     artifactPath: input.artifactPath,
-    operationKind: 'synthesize',
-    languageCode: input.performance.languageCode,
+    operationKind: 'alignment-plan',
+    languageCode: input.plan.languageCode,
   });
 }
 
-export function publishSegmentArtifactRegistered(input: {
+export function publishAudioCompositionCompleted(input: {
+  readonly eventBus: DomainEventBus;
+  readonly workflowId: string;
+  readonly jobId: string;
+  readonly nodeId: string;
+  readonly composition: AudioComposition;
+  readonly artifactPath: string;
+}): void {
+  input.eventBus.publish({
+    id: createDomainEventId(),
+    timestamp: new Date().toISOString(),
+    type: TEMPORAL_EVENTS.COMPOSED,
+    workflowId: input.workflowId,
+    jobId: input.jobId,
+    nodeId: input.nodeId,
+    compositionId: input.composition.id,
+    languageCode: input.composition.languageCode,
+    artifactPath: input.artifactPath,
+  });
+
+  input.eventBus.publish({
+    id: createDomainEventId(),
+    timestamp: new Date().toISOString(),
+    type: TEMPORAL_EVENTS.ARTIFACT_PRODUCED,
+    workflowId: input.workflowId,
+    jobId: input.jobId,
+    nodeId: input.nodeId,
+    artifactPath: input.artifactPath,
+    operationKind: 'compose',
+    languageCode: input.composition.languageCode,
+  });
+}
+
+export function publishAlignedSegmentArtifactRegistered(input: {
   readonly eventBus: DomainEventBus;
   readonly workflowId: string;
   readonly jobId: string;
@@ -115,7 +149,7 @@ export function publishSegmentArtifactRegistered(input: {
   input.eventBus.publish({
     id: createDomainEventId(),
     timestamp: new Date().toISOString(),
-    type: VOICE_PERFORMANCE_EVENTS.SEGMENT_ARTIFACT_REGISTERED,
+    type: TEMPORAL_EVENTS.SEGMENT_ARTIFACT_REGISTERED,
     workflowId: input.workflowId,
     jobId: input.jobId,
     nodeId: input.nodeId,

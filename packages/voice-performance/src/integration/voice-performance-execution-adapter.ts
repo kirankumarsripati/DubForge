@@ -22,10 +22,7 @@ export class VoicePerformanceExecutionAdapter implements ExecutionAdapter {
   }
 }
 
-export const VOICE_PERFORMANCE_NODE_KINDS: readonly NodeKind[] = [
-  NODE_KINDS.SPEECH,
-  NODE_KINDS.ALIGN,
-];
+export const VOICE_PERFORMANCE_NODE_KINDS: readonly NodeKind[] = [NODE_KINDS.SPEECH];
 
 export function isVoicePerformanceNodeKind(nodeKind: NodeKind): boolean {
   return VOICE_PERFORMANCE_NODE_KINDS.includes(nodeKind);

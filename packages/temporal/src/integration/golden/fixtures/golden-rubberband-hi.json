@@ -1,0 +1,12 @@
+{
+  "segments": [
+    {
+      "segmentId": "seg-hello",
+      "durationMs": 2500
+    },
+    {
+      "segmentId": "seg-golden",
+      "durationMs": 2500
+    }
+  ]
+}

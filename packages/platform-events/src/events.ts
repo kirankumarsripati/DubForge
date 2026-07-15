@@ -84,6 +84,16 @@ export const VOICE_PERFORMANCE_EVENTS = {
   SEGMENT_ARTIFACT_REGISTERED: 'voice-performance.segment-artifact-registered',
 } as const;
 
+export const TEMPORAL_EVENTS = {
+  ALIGNMENT_PLANNED: 'temporal.alignment-planned',
+  COMPOSED: 'temporal.composed',
+  OPERATION_STARTED: 'temporal.operation-started',
+  OPERATION_COMPLETED: 'temporal.operation-completed',
+  OPERATION_FAILED: 'temporal.operation-failed',
+  ARTIFACT_PRODUCED: 'temporal.artifact-produced',
+  SEGMENT_ARTIFACT_REGISTERED: 'temporal.segment-artifact-registered',
+} as const;
+
 export interface DomainEventBase {
   readonly id: string;
   readonly timestamp: string;
@@ -358,6 +368,53 @@ export interface VoicePerformanceSegmentArtifactEvent extends DomainEventBase {
   readonly languageCode: string;
 }
 
+export interface TemporalAlignmentPlannedEvent extends DomainEventBase {
+  readonly type: typeof TEMPORAL_EVENTS.ALIGNMENT_PLANNED;
+  readonly nodeId: string;
+  readonly planId: string;
+  readonly languageCode: string;
+  readonly segmentCount: number;
+  readonly artifactPath: string;
+}
+
+export interface TemporalComposedEvent extends DomainEventBase {
+  readonly type: typeof TEMPORAL_EVENTS.COMPOSED;
+  readonly nodeId: string;
+  readonly compositionId: string;
+  readonly languageCode: string;
+  readonly artifactPath: string;
+}
+
+export interface TemporalOperationEvent extends DomainEventBase {
+  readonly type:
+    | typeof TEMPORAL_EVENTS.OPERATION_STARTED
+    | typeof TEMPORAL_EVENTS.OPERATION_COMPLETED
+    | typeof TEMPORAL_EVENTS.OPERATION_FAILED;
+  readonly nodeId: string;
+  readonly operationId: string;
+  readonly operationKind: string;
+  readonly artifactPath?: string;
+  readonly durationMs?: number;
+  readonly message?: string;
+  readonly languageCode: string | null;
+}
+
+export interface TemporalArtifactProducedEvent extends DomainEventBase {
+  readonly type: typeof TEMPORAL_EVENTS.ARTIFACT_PRODUCED;
+  readonly nodeId: string;
+  readonly artifactPath: string;
+  readonly operationKind: string;
+  readonly languageCode: string | null;
+}
+
+export interface TemporalSegmentArtifactEvent extends DomainEventBase {
+  readonly type: typeof TEMPORAL_EVENTS.SEGMENT_ARTIFACT_REGISTERED;
+  readonly nodeId: string;
+  readonly segmentId: string;
+  readonly artifactPath: string;
+  readonly languageCode: string;
+}
+
 export type DomainEvent =
   | WorkflowLifecycleEvent
   | WorkflowStateChangedEvent
@@ -388,7 +445,12 @@ export type DomainEvent =
   | VoicePerformanceAlignedEvent
   | VoicePerformanceOperationEvent
   | VoicePerformanceArtifactProducedEvent
-  | VoicePerformanceSegmentArtifactEvent;
+  | VoicePerformanceSegmentArtifactEvent
+  | TemporalAlignmentPlannedEvent
+  | TemporalComposedEvent
+  | TemporalOperationEvent
+  | TemporalArtifactProducedEvent
+  | TemporalSegmentArtifactEvent;
 
 export type DomainEventType = DomainEvent['type'];
 

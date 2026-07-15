@@ -26,6 +26,7 @@ describe('PlatformStack', () => {
       useFixtureTranscriptionAdapters: true,
       useFixtureLocalizationAdapters: true,
       useFixtureVoicePerformanceAdapters: true,
+      useFixtureTemporalAdapters: true,
     });
 
     const finalState = await stack.engine.start({

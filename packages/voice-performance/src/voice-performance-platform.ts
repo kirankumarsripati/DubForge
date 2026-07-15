@@ -10,10 +10,7 @@ import type { ExtensionRuntime } from '@dubforge/providers';
 
 import { FixtureKokoroAdapter, KokoroAdapter } from './adapters/kokoro/kokoro-adapter.js';
 import { VoicePerformanceApplication } from './application/voice-performance-application.js';
-import {
-  AlignSpeechService,
-  SynthesizeSpeechService,
-} from './application/voice-performance-services.js';
+import { SynthesizeSpeechService } from './application/voice-performance-services.js';
 import { VoicePerformanceDiagnostics } from './diagnostics/voice-performance-diagnostics.js';
 import { createPerformancePlanner } from './engine/performance-planner.js';
 import { createSpeechSynthesisEngine } from './engine/speech-synthesis-engine.js';
@@ -91,13 +88,7 @@ export function createVoicePerformancePlatform(
     extensionRuntime: options.extensionRuntime,
   });
 
-  const alignService = new AlignSpeechService({
-    eventBus: options.eventBus,
-    repository,
-    artifactSink: options.artifactSink,
-  });
-
-  const application = new VoicePerformanceApplication(synthesizeService, alignService);
+  const application = new VoicePerformanceApplication(synthesizeService);
 
   return {
     application,

@@ -1,5 +1,5 @@
 {
-  "name": "@dubforge/platform-runtime",
+  "name": "@dubforge/temporal",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,28 +12,25 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && cp -R src/integration/golden/fixtures dist/integration/golden/",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "@dubforge/pipeline": "workspace:*",
-    "@dubforge/platform-artifact": "workspace:*",
-    "@dubforge/platform-events": "workspace:*",
-    "@dubforge/platform-execution": "workspace:*",
-    "@dubforge/platform-execution-adapters": "workspace:*",
-    "@dubforge/platform-observability": "workspace:*",
-    "@dubforge/platform-resource": "workspace:*",
-    "@dubforge/media": "workspace:*",
-    "@dubforge/transcription": "workspace:*",
+    "@dubforge/job-config": "workspace:*",
     "@dubforge/localization": "workspace:*",
+    "@dubforge/media": "workspace:*",
+    "@dubforge/platform-events": "workspace:*",
+    "@dubforge/platform-execution-adapters": "workspace:*",
+    "@dubforge/providers": "workspace:*",
+    "@dubforge/transcription": "workspace:*",
+    "@dubforge/types": "workspace:*",
     "@dubforge/voice-performance": "workspace:*",
-    "@dubforge/temporal": "workspace:*",
-    "@dubforge/providers": "workspace:*"
+    "better-sqlite3": "^11.10.0"
   },
   "devDependencies": {
-    "@dubforge/job-config": "workspace:*",
+    "@types/better-sqlite3": "^7.6.13",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   }

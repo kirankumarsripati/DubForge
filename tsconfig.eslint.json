@@ -24,6 +24,7 @@
       "@dubforge/transcription": ["packages/transcription/src/index.ts"],
       "@dubforge/localization": ["packages/localization/src/index.ts"],
       "@dubforge/voice-performance": ["packages/voice-performance/src/index.ts"],
+      "@dubforge/temporal": ["packages/temporal/src/index.ts"],
       "@dubforge/providers": ["packages/providers/src/index.ts"],
       "@dubforge/assets": ["packages/assets/src/index.ts"],
       "@dubforge/ui": ["packages/ui/src/index.ts"],

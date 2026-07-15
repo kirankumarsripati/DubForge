@@ -173,6 +173,7 @@ export function createPipelineJobService(
     useFixtureTranscriptionAdapters: true,
     useFixtureLocalizationAdapters: true,
     useFixtureVoicePerformanceAdapters: true,
+    useFixtureTemporalAdapters: true,
   });
 
   return new PipelineJobService(cacheService, jobsRoot, platformStack);

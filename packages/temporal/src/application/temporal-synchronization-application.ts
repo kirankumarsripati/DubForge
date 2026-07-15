@@ -4,21 +4,21 @@ import type {
 } from '@dubforge/platform-execution-adapters';
 import { NODE_KINDS, type NodeKind } from '@dubforge/types';
 
-import { SynthesizeSpeechService } from './voice-performance-services.js';
+import { AlignAndComposeService } from './temporal-services.js';
 
-const VOICE_PERFORMANCE_NODE_KINDS = new Set<NodeKind>([NODE_KINDS.SPEECH]);
+const TEMPORAL_NODE_KINDS = new Set<NodeKind>([NODE_KINDS.ALIGN]);
 
-export class VoicePerformanceApplication {
-  constructor(private readonly synthesizeService: SynthesizeSpeechService) {}
+export class TemporalSynchronizationApplication {
+  constructor(private readonly alignAndComposeService: AlignAndComposeService) {}
 
   canHandle(nodeKind: NodeKind): boolean {
-    return VOICE_PERFORMANCE_NODE_KINDS.has(nodeKind);
+    return TEMPORAL_NODE_KINDS.has(nodeKind);
   }
 
   async executeNode(request: ExecutionAdapterRequest): Promise<ExecutionAdapterResult> {
     switch (request.nodeKind) {
-      case NODE_KINDS.SPEECH:
-        return this.synthesizeService.synthesizeForWorkflow({
+      case NODE_KINDS.ALIGN:
+        return this.alignAndComposeService.alignAndComposeForWorkflow({
           workflowId: request.workflowId,
           jobId: request.jobId,
           nodeId: request.nodeId,
@@ -29,7 +29,7 @@ export class VoicePerformanceApplication {
         });
       default:
         throw new Error(
-          `Voice performance application cannot handle node kind "${request.nodeKind}".`,
+          `Temporal synchronization application cannot handle node kind "${request.nodeKind}".`,
         );
     }
   }

@@ -2,7 +2,6 @@ export const VOICE_PERFORMANCE_VERSION = '1.0.0' as const;
 
 export const VOICE_PERFORMANCE_OPERATION_KINDS = {
   SYNTHESIZE: 'synthesize',
-  ALIGN: 'align',
 } as const;
 
 export type VoicePerformanceOperationKind =

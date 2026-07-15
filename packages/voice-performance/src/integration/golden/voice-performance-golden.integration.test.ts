@@ -130,7 +130,7 @@ describe('Voice performance golden integration', () => {
     voicePlatform.close();
   });
 
-  it('aligns synthesized speech and supports parallel synthesis across languages', async () => {
+  it('supports parallel synthesis across languages', async () => {
     const rootPath = await mkdtemp(join(tmpdir(), 'dubforge-voice-parallel-'));
     tempDirs.push(rootPath);
     const artifactRoot = join(rootPath, 'artifacts');
@@ -205,28 +205,12 @@ describe('Voice performance golden integration', () => {
       ),
     );
 
-    const alignResult = await voicePlatform.application.executeNode({
-      executionId: 'exec-align',
-      workflowId: 'wf-voice-parallel',
-      jobId: 'job-voice-parallel',
-      nodeId: 'align:hi',
-      nodeKind: 'align',
-      ...baseRequest,
-      languageCode: 'hi',
-      artifactRoot,
-      artifacts: {},
-      onProgress: () => undefined,
-      artifactSink: sink,
-    });
-
-    expect(alignResult.artifacts['alignedSpeech:hi']).toBeDefined();
-
     const report = voicePlatform.diagnostics.buildWorkflowReport(
       voicePlatform.repository,
       'wf-voice-parallel',
     );
     expect(report.languages).toEqual(expect.arrayContaining(['hi', 'es']));
-    expect(report.operations.completed).toBeGreaterThanOrEqual(3);
+    expect(report.operations.completed).toBeGreaterThanOrEqual(2);
 
     localizationPlatform.close();
     voicePlatform.close();
