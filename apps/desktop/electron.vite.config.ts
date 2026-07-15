@@ -7,12 +7,22 @@ export default defineConfig({
   main: {
     plugins: [
       externalizeDepsPlugin({
-        exclude: ['@dubforge/shared'],
+        exclude: [
+          '@dubforge/shared',
+          '@dubforge/pipeline',
+          '@dubforge/providers',
+          '@dubforge/job-config',
+          '@dubforge/types',
+        ],
       }),
     ],
     resolve: {
       alias: {
         '@dubforge/shared': resolve(__dirname, '../../packages/shared/src'),
+        '@dubforge/pipeline': resolve(__dirname, '../../packages/pipeline/src'),
+        '@dubforge/providers': resolve(__dirname, '../../packages/providers/src'),
+        '@dubforge/job-config': resolve(__dirname, '../../packages/job-config/src'),
+        '@dubforge/types': resolve(__dirname, '../../packages/types/src'),
       },
     },
     build: {
