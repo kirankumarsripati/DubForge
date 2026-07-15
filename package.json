@@ -40,7 +40,8 @@
     "onlyBuiltDependencies": [
       "electron",
       "esbuild",
-      "electron-winstaller"
+      "electron-winstaller",
+      "better-sqlite3"
     ]
   },
   "lint-staged": {
