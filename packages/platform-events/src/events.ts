@@ -74,6 +74,16 @@ export const LOCALIZATION_EVENTS = {
   GLOSSARY_APPLIED: 'localization.glossary-applied',
 } as const;
 
+export const VOICE_PERFORMANCE_EVENTS = {
+  SYNTHESIZED: 'voice-performance.synthesized',
+  ALIGNED: 'voice-performance.aligned',
+  OPERATION_STARTED: 'voice-performance.operation-started',
+  OPERATION_COMPLETED: 'voice-performance.operation-completed',
+  OPERATION_FAILED: 'voice-performance.operation-failed',
+  ARTIFACT_PRODUCED: 'voice-performance.artifact-produced',
+  SEGMENT_ARTIFACT_REGISTERED: 'voice-performance.segment-artifact-registered',
+} as const;
+
 export interface DomainEventBase {
   readonly id: string;
   readonly timestamp: string;
@@ -301,6 +311,53 @@ export interface LocalizationQualityEvent extends DomainEventBase {
   readonly languageCode: string;
 }
 
+export interface VoicePerformanceSynthesizedEvent extends DomainEventBase {
+  readonly type: typeof VOICE_PERFORMANCE_EVENTS.SYNTHESIZED;
+  readonly nodeId: string;
+  readonly performanceId: string;
+  readonly languageCode: string;
+  readonly segmentCount: number;
+  readonly artifactPath: string;
+}
+
+export interface VoicePerformanceAlignedEvent extends DomainEventBase {
+  readonly type: typeof VOICE_PERFORMANCE_EVENTS.ALIGNED;
+  readonly nodeId: string;
+  readonly performanceId: string;
+  readonly languageCode: string;
+  readonly artifactPath: string;
+}
+
+export interface VoicePerformanceOperationEvent extends DomainEventBase {
+  readonly type:
+    | typeof VOICE_PERFORMANCE_EVENTS.OPERATION_STARTED
+    | typeof VOICE_PERFORMANCE_EVENTS.OPERATION_COMPLETED
+    | typeof VOICE_PERFORMANCE_EVENTS.OPERATION_FAILED;
+  readonly nodeId: string;
+  readonly operationId: string;
+  readonly operationKind: string;
+  readonly artifactPath?: string;
+  readonly durationMs?: number;
+  readonly message?: string;
+  readonly languageCode: string | null;
+}
+
+export interface VoicePerformanceArtifactProducedEvent extends DomainEventBase {
+  readonly type: typeof VOICE_PERFORMANCE_EVENTS.ARTIFACT_PRODUCED;
+  readonly nodeId: string;
+  readonly artifactPath: string;
+  readonly operationKind: string;
+  readonly languageCode: string | null;
+}
+
+export interface VoicePerformanceSegmentArtifactEvent extends DomainEventBase {
+  readonly type: typeof VOICE_PERFORMANCE_EVENTS.SEGMENT_ARTIFACT_REGISTERED;
+  readonly nodeId: string;
+  readonly segmentId: string;
+  readonly artifactPath: string;
+  readonly languageCode: string;
+}
+
 export type DomainEvent =
   | WorkflowLifecycleEvent
   | WorkflowStateChangedEvent
@@ -326,7 +383,12 @@ export type DomainEvent =
   | LocalizationDocumentEvent
   | LocalizationOperationEvent
   | LocalizationArtifactProducedEvent
-  | LocalizationQualityEvent;
+  | LocalizationQualityEvent
+  | VoicePerformanceSynthesizedEvent
+  | VoicePerformanceAlignedEvent
+  | VoicePerformanceOperationEvent
+  | VoicePerformanceArtifactProducedEvent
+  | VoicePerformanceSegmentArtifactEvent;
 
 export type DomainEventType = DomainEvent['type'];
 

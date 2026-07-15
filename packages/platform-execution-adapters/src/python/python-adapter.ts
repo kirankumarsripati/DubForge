@@ -1,8 +1,8 @@
-import { EXECUTION_ADAPTER_KINDS } from '../types.js';
-import type {
-  ExecutionAdapter,
-  ExecutionAdapterRequest,
-  ExecutionAdapterResult,
+import {
+  EXECUTION_ADAPTER_KINDS,
+  type ExecutionAdapter,
+  type ExecutionAdapterRequest,
+  type ExecutionAdapterResult,
 } from '../types.js';
 
 export interface PythonExecutionAdapterOptions {
@@ -14,8 +14,8 @@ export class PythonExecutionAdapter implements ExecutionAdapter {
 
   constructor(private readonly options: PythonExecutionAdapterOptions = {}) {}
 
-  canHandle(request: ExecutionAdapterRequest): boolean {
-    return request.nodeKind === 'speech';
+  canHandle(_request: ExecutionAdapterRequest): boolean {
+    return false;
   }
 
   execute(request: ExecutionAdapterRequest): Promise<ExecutionAdapterResult> {

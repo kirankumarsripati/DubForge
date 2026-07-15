@@ -59,10 +59,7 @@ export {
   LOCALIZATION_NODE_KINDS,
   isLocalizationNodeKind,
 } from './integration/localization-execution-adapter.js';
-export {
-  createPlatformAdapterRegistry,
-  resolveGoldenFixturePath,
-} from './integration/adapter-registry.js';
+export { resolveGoldenFixturePath } from './integration/adapter-registry.js';
 
 export {
   createLocalizationPlatform,

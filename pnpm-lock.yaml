@@ -401,6 +401,9 @@ importers:
       '@dubforge/transcription':
         specifier: workspace:*
         version: link:../transcription
+      '@dubforge/voice-performance':
+        specifier: workspace:*
+        version: link:../voice-performance
     devDependencies:
       '@dubforge/job-config':
         specifier: workspace:*
@@ -520,6 +523,46 @@ importers:
       react:
         specifier: ^19.1.0
         version: 19.2.7
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@26.1.1)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(yaml@2.9.0)
+
+  packages/voice-performance:
+    dependencies:
+      '@dubforge/job-config':
+        specifier: workspace:*
+        version: link:../job-config
+      '@dubforge/localization':
+        specifier: workspace:*
+        version: link:../localization
+      '@dubforge/media':
+        specifier: workspace:*
+        version: link:../media
+      '@dubforge/platform-events':
+        specifier: workspace:*
+        version: link:../platform-events
+      '@dubforge/platform-execution-adapters':
+        specifier: workspace:*
+        version: link:../platform-execution-adapters
+      '@dubforge/providers':
+        specifier: workspace:*
+        version: link:../providers
+      '@dubforge/transcription':
+        specifier: workspace:*
+        version: link:../transcription
+      '@dubforge/types':
+        specifier: workspace:*
+        version: link:../types
+      better-sqlite3:
+        specifier: ^11.10.0
+        version: 11.10.0
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
       typescript:
         specifier: ^5.8.3
         version: 5.9.3

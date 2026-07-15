@@ -8,9 +8,13 @@ import { createResourcePlatform } from '@dubforge/platform-resource';
 import { createMediaPlatform } from '@dubforge/media';
 import {
   createLocalizationPlatform,
-  createPlatformAdapterRegistry,
   createTranscriptReaderFromRepository,
 } from '@dubforge/localization';
+import {
+  createVoicePerformancePlatform,
+  createLocalizedDocumentReaderFromRepository,
+  createPlatformAdapterRegistry,
+} from '@dubforge/voice-performance';
 import { createTranscriptionPlatform } from '@dubforge/transcription';
 import type { ExtensionRuntime } from '@dubforge/providers';
 import {
@@ -29,6 +33,7 @@ export interface PlatformStack {
   readonly mediaPlatform: ReturnType<typeof createMediaPlatform>;
   readonly transcriptionPlatform: ReturnType<typeof createTranscriptionPlatform>;
   readonly localizationPlatform: ReturnType<typeof createLocalizationPlatform>;
+  readonly voicePerformancePlatform: ReturnType<typeof createVoicePerformancePlatform>;
   readonly observabilityPlatform: ReturnType<typeof createObservabilityPlatform>;
   readonly resourcePlatform: ReturnType<typeof createResourcePlatform>;
   dispose(): void;
@@ -43,6 +48,7 @@ export interface PlatformStackOptions {
   readonly useFixtureMediaAdapters?: boolean;
   readonly useFixtureTranscriptionAdapters?: boolean;
   readonly useFixtureLocalizationAdapters?: boolean;
+  readonly useFixtureVoicePerformanceAdapters?: boolean;
 }
 
 export function createPlatformStack(options: PlatformStackOptions): PlatformStack {
@@ -86,10 +92,22 @@ export function createPlatformStack(options: PlatformStackOptions): PlatformStac
     transcriptReader: createTranscriptReaderFromRepository(transcriptionPlatform.repository),
   });
 
+  const voicePerformancePlatform = createVoicePerformancePlatform({
+    rootPath: join(options.rootPath, 'voice-performance'),
+    eventBus,
+    artifactSink: artifactPlatform.getArtifactSink(),
+    extensionRuntime: options.extensionRuntime,
+    useFixtureAdapters: options.useFixtureVoicePerformanceAdapters,
+    localizedDocumentReader: createLocalizedDocumentReaderFromRepository(
+      localizationPlatform.repository,
+    ),
+  });
+
   const adapterRegistry = createPlatformAdapterRegistry({
     mediaExecutionAdapter: mediaPlatform.createExecutionAdapter(),
     transcriptionExecutionAdapter: transcriptionPlatform.createExecutionAdapter(),
     localizationExecutionAdapter: localizationPlatform.createExecutionAdapter(),
+    voicePerformanceExecutionAdapter: voicePerformancePlatform.createExecutionAdapter(),
   });
 
   const executionPlatform = createExecutionPlatform({
@@ -117,10 +135,12 @@ export function createPlatformStack(options: PlatformStackOptions): PlatformStac
     mediaPlatform,
     transcriptionPlatform,
     localizationPlatform,
+    voicePerformancePlatform,
     observabilityPlatform,
     resourcePlatform,
     dispose(): void {
       observabilityPlatform.dispose();
+      voicePerformancePlatform.close();
       localizationPlatform.close();
       transcriptionPlatform.close();
       mediaPlatform.close();

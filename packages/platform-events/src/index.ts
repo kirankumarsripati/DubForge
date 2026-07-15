@@ -2,6 +2,7 @@ export {
   ARTIFACT_EVENTS,
   EXECUTION_EVENTS,
   LOCALIZATION_EVENTS,
+  VOICE_PERFORMANCE_EVENTS,
   MEDIA_EVENTS,
   TRANSCRIPTION_EVENTS,
   OBSERVABILITY_EVENTS,
@@ -39,6 +40,11 @@ export type {
   LocalizationOperationEvent,
   LocalizationArtifactProducedEvent,
   LocalizationQualityEvent,
+  VoicePerformanceSynthesizedEvent,
+  VoicePerformanceAlignedEvent,
+  VoicePerformanceOperationEvent,
+  VoicePerformanceArtifactProducedEvent,
+  VoicePerformanceSegmentArtifactEvent,
 } from './events.js';
 
 export { createDomainEventBus, createDomainEventId, type DomainEventBus } from './event-bus.js';

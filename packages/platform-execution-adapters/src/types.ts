@@ -8,6 +8,7 @@ export const EXECUTION_ADAPTER_KINDS = {
   MEDIA: 'media',
   TRANSCRIPTION: 'transcription',
   LOCALIZATION: 'localization',
+  VOICE_PERFORMANCE: 'voice-performance',
   MOCK: 'mock',
 } as const;
 

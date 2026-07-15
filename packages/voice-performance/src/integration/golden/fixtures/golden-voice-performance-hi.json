@@ -1,0 +1,18 @@
+{
+  "languageCode": "hi",
+  "segmentCount": 2,
+  "segments": [
+    {
+      "id": "seg-hello",
+      "startMs": 0,
+      "endMs": 2500,
+      "audioDurationMs": 1200
+    },
+    {
+      "id": "seg-golden",
+      "startMs": 2500,
+      "endMs": 5000,
+      "audioDurationMs": 1800
+    }
+  ]
+}
