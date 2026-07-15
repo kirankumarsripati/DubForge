@@ -1,0 +1,8 @@
+{
+  "adapter": "fixture-extract-audio",
+  "sourcePath": "/fixtures/sample.mp4",
+  "audioPath": "/artifacts/node-extract-audio.wav",
+  "sampleRate": 16000,
+  "channels": 1,
+  "codec": "pcm_s16le"
+}

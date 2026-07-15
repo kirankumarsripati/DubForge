@@ -19,7 +19,11 @@ describe('PlatformStack', () => {
     tempDirs.push(rootPath);
     const artifactRoot = join(rootPath, 'workflow-artifacts');
 
-    const stack = createPlatformStack({ rootPath, maxConcurrency: 2 });
+    const stack = createPlatformStack({
+      rootPath,
+      maxConcurrency: 2,
+      useFixtureMediaAdapters: true,
+    });
 
     const finalState = await stack.engine.start({
       workflowId: 'wf-platform',
@@ -39,6 +43,10 @@ describe('PlatformStack', () => {
       artifactRoot,
     });
 
+    const failedNodes = [...finalState.nodeStates.entries()].filter(
+      ([, node]) => node.status === 'failed',
+    );
+    expect(failedNodes).toHaveLength(0);
     expect(finalState.status).toBe('completed');
     expect(stack.observabilityPlatform.getLogger().getEntries().length).toBeGreaterThan(0);
     stack.dispose();

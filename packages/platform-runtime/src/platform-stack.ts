@@ -1,9 +1,12 @@
-import { createDomainEventBus, type DomainEventBus } from '@dubforge/platform-events';
+import { join } from 'node:path';
+
+import { createDomainEventBus } from '@dubforge/platform-events';
 import { createExecutionPlatform } from '@dubforge/platform-execution';
-import { createDefaultAdapterRegistry } from '@dubforge/platform-execution-adapters';
 import { createArtifactPlatform } from '@dubforge/platform-artifact';
 import { createObservabilityPlatform } from '@dubforge/platform-observability';
 import { createResourcePlatform } from '@dubforge/platform-resource';
+import { createMediaPlatform, createMediaAwareAdapterRegistry } from '@dubforge/media';
+import type { ExtensionRuntime } from '@dubforge/providers';
 import {
   PipelineEngine,
   deserializeWorkflowState,
@@ -13,10 +16,11 @@ import {
 } from '@dubforge/pipeline';
 
 export interface PlatformStack {
-  readonly eventBus: DomainEventBus;
+  readonly eventBus: ReturnType<typeof createDomainEventBus>;
   readonly engine: PipelineEngine;
   readonly executionPlatform: ReturnType<typeof createExecutionPlatform>;
   readonly artifactPlatform: ReturnType<typeof createArtifactPlatform<WorkflowState>>;
+  readonly mediaPlatform: ReturnType<typeof createMediaPlatform>;
   readonly observabilityPlatform: ReturnType<typeof createObservabilityPlatform>;
   readonly resourcePlatform: ReturnType<typeof createResourcePlatform>;
   dispose(): void;
@@ -25,6 +29,10 @@ export interface PlatformStack {
 export interface PlatformStackOptions {
   readonly rootPath: string;
   readonly maxConcurrency?: number;
+  readonly ffprobePath?: string;
+  readonly ffmpegPath?: string;
+  readonly extensionRuntime?: ExtensionRuntime;
+  readonly useFixtureMediaAdapters?: boolean;
 }
 
 export function createPlatformStack(options: PlatformStackOptions): PlatformStack {
@@ -41,9 +49,21 @@ export function createPlatformStack(options: PlatformStackOptions): PlatformStac
     },
   );
 
+  const mediaPlatform = createMediaPlatform({
+    rootPath: join(options.rootPath, 'media'),
+    eventBus,
+    artifactSink: artifactPlatform.getArtifactSink(),
+    extensionRuntime: options.extensionRuntime,
+    ffprobePath: options.ffprobePath,
+    ffmpegPath: options.ffmpegPath,
+    useFixtureAdapters: options.useFixtureMediaAdapters,
+  });
+
+  const adapterRegistry = createMediaAwareAdapterRegistry(mediaPlatform.createExecutionAdapter());
+
   const executionPlatform = createExecutionPlatform({
     eventBus,
-    adapterRegistry: createDefaultAdapterRegistry(),
+    adapterRegistry,
     artifactSink: artifactPlatform.getArtifactSink(),
     defaultTimeoutMs: 300_000,
   });
@@ -63,10 +83,12 @@ export function createPlatformStack(options: PlatformStackOptions): PlatformStac
     engine,
     executionPlatform,
     artifactPlatform,
+    mediaPlatform,
     observabilityPlatform,
     resourcePlatform,
     dispose(): void {
       observabilityPlatform.dispose();
+      mediaPlatform.close();
       artifactPlatform.close();
     },
   };

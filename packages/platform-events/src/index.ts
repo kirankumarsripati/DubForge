@@ -1,6 +1,7 @@
 export {
   ARTIFACT_EVENTS,
   EXECUTION_EVENTS,
+  MEDIA_EVENTS,
   OBSERVABILITY_EVENTS,
   RESOURCE_EVENTS,
   WORKFLOW_EVENTS,
@@ -24,6 +25,10 @@ export type {
   WorkflowNodeEvent,
   WorkflowNodeProgressEvent,
   WorkflowStateChangedEvent,
+  MediaFileProbedEvent,
+  MediaOperationEvent,
+  MediaArtifactProducedEvent,
+  MediaDiagnosticEvent,
 } from './events.js';
 
 export { createDomainEventBus, createDomainEventId, type DomainEventBus } from './event-bus.js';

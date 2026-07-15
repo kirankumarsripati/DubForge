@@ -168,6 +168,40 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/debug@4.1.13)(@types/node@26.1.1)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(yaml@2.9.0)
 
+  packages/media:
+    dependencies:
+      '@dubforge/job-config':
+        specifier: workspace:*
+        version: link:../job-config
+      '@dubforge/platform-events':
+        specifier: workspace:*
+        version: link:../platform-events
+      '@dubforge/platform-execution-adapters':
+        specifier: workspace:*
+        version: link:../platform-execution-adapters
+      '@dubforge/providers':
+        specifier: workspace:*
+        version: link:../providers
+      '@dubforge/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@dubforge/types':
+        specifier: workspace:*
+        version: link:../types
+      better-sqlite3:
+        specifier: ^11.10.0
+        version: 11.10.0
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@26.1.1)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(yaml@2.9.0)
+
   packages/pipeline:
     dependencies:
       '@dubforge/job-config':
@@ -294,6 +328,9 @@ importers:
 
   packages/platform-runtime:
     dependencies:
+      '@dubforge/media':
+        specifier: workspace:*
+        version: link:../media
       '@dubforge/pipeline':
         specifier: workspace:*
         version: link:../pipeline
@@ -315,6 +352,9 @@ importers:
       '@dubforge/platform-resource':
         specifier: workspace:*
         version: link:../platform-resource
+      '@dubforge/providers':
+        specifier: workspace:*
+        version: link:../providers
     devDependencies:
       '@dubforge/job-config':
         specifier: workspace:*

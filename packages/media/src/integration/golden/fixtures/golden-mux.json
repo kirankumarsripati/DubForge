@@ -1,0 +1,8 @@
+{
+  "adapter": "fixture-mux",
+  "videoPath": "/fixtures/sample.mp4",
+  "audioPath": "/artifacts/node-extract-audio.wav",
+  "outputPath": "/artifacts/node-mux-muxed.mkv",
+  "videoCodec": "copy",
+  "audioCodec": "aac"
+}

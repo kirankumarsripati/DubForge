@@ -167,6 +167,9 @@ export function createPipelineJobService(
   const platformStack = createPlatformStack({
     rootPath: join(jobsRoot, 'platform'),
     maxConcurrency: 4,
+    ffprobePath: 'ffprobe',
+    ffmpegPath: 'ffmpeg',
+    useFixtureMediaAdapters: true,
   });
 
   return new PipelineJobService(cacheService, jobsRoot, platformStack);

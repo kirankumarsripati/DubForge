@@ -5,6 +5,7 @@ export const EXECUTION_ADAPTER_KINDS = {
   NODE: 'node',
   PYTHON: 'python',
   NATIVE_BINARY: 'native-binary',
+  MEDIA: 'media',
   MOCK: 'mock',
 } as const;
 

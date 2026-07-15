@@ -45,6 +45,15 @@ export const OBSERVABILITY_EVENTS = {
   SPAN_ENDED: 'observability.span-ended',
 } as const;
 
+export const MEDIA_EVENTS = {
+  FILE_PROBED: 'media.file-probed',
+  OPERATION_STARTED: 'media.operation-started',
+  OPERATION_COMPLETED: 'media.operation-completed',
+  OPERATION_FAILED: 'media.operation-failed',
+  ARTIFACT_PRODUCED: 'media.artifact-produced',
+  DIAGNOSTIC_RECORDED: 'media.diagnostic-recorded',
+} as const;
+
 export interface DomainEventBase {
   readonly id: string;
   readonly timestamp: string;
@@ -158,6 +167,44 @@ export interface ObservabilitySpanEvent extends DomainEventBase {
   readonly parentSpanId: string | null;
 }
 
+export interface MediaFileProbedEvent extends DomainEventBase {
+  readonly type: typeof MEDIA_EVENTS.FILE_PROBED;
+  readonly nodeId: string;
+  readonly mediaFileId: string;
+  readonly artifactPath: string;
+  readonly container: string;
+  readonly durationSeconds: number;
+  readonly resolution: string;
+  readonly videoCodec: string;
+}
+
+export interface MediaOperationEvent extends DomainEventBase {
+  readonly type:
+    | typeof MEDIA_EVENTS.OPERATION_STARTED
+    | typeof MEDIA_EVENTS.OPERATION_COMPLETED
+    | typeof MEDIA_EVENTS.OPERATION_FAILED;
+  readonly nodeId: string;
+  readonly operationId: string;
+  readonly operationKind: string;
+  readonly artifactPath?: string;
+  readonly durationMs?: number;
+  readonly message?: string;
+}
+
+export interface MediaArtifactProducedEvent extends DomainEventBase {
+  readonly type: typeof MEDIA_EVENTS.ARTIFACT_PRODUCED;
+  readonly nodeId: string;
+  readonly artifactPath: string;
+  readonly operationKind: string;
+}
+
+export interface MediaDiagnosticEvent extends DomainEventBase {
+  readonly type: typeof MEDIA_EVENTS.DIAGNOSTIC_RECORDED;
+  readonly nodeId: string;
+  readonly level: 'info' | 'warn' | 'error';
+  readonly message: string;
+}
+
 export type DomainEvent =
   | WorkflowLifecycleEvent
   | WorkflowStateChangedEvent
@@ -171,7 +218,11 @@ export type DomainEvent =
   | ObservabilityLogEvent
   | ObservabilityMetricEvent
   | ObservabilityTimelineEvent
-  | ObservabilitySpanEvent;
+  | ObservabilitySpanEvent
+  | MediaFileProbedEvent
+  | MediaOperationEvent
+  | MediaArtifactProducedEvent
+  | MediaDiagnosticEvent;
 
 export type DomainEventType = DomainEvent['type'];
 
