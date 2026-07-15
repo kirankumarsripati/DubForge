@@ -11,6 +11,9 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
         },
+        output: {
+          format: 'cjs',
+        },
       },
     },
   },
@@ -23,7 +26,7 @@ export default defineConfig({
         },
         output: {
           format: 'cjs',
-          entryFileNames: '[name].js',
+          entryFileNames: '[name].cjs',
         },
       },
     },
