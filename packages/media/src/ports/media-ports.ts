@@ -1,5 +1,6 @@
 import type { FfprobeDiagnostics } from '@dubforge/shared';
 
+import type { ProcessExecutionDiagnostics } from '../adapters/subprocess/process-execution.js';
 import type { MediaFile } from '../domain/entities/media-entities.js';
 import type { Duration } from '../domain/value-objects/duration.js';
 import type { Resolution } from '../domain/value-objects/resolution.js';
@@ -27,6 +28,51 @@ export interface ProbeMediaPort {
   probe(input: ProbeMediaInput): Promise<ProbeMediaResult>;
 }
 
+export interface FingerprintMediaInput {
+  readonly filePath: string;
+  readonly filename: string;
+  readonly workflowId: string;
+  readonly jobId: string;
+  readonly nodeId: string;
+  readonly artifactRoot: string;
+  readonly fileSizeBytes: number;
+  readonly fileModifiedAtMs: number;
+}
+
+export interface FingerprintMediaResult {
+  readonly contentHash: string;
+  readonly artifactPath: string;
+  readonly fingerprintJson: string;
+  readonly durationMs: number;
+}
+
+export interface FingerprintMediaPort {
+  fingerprint(input: FingerprintMediaInput): Promise<FingerprintMediaResult>;
+}
+
+export interface ThumbnailMediaInput {
+  readonly filePath: string;
+  readonly filename: string;
+  readonly workflowId: string;
+  readonly jobId: string;
+  readonly nodeId: string;
+  readonly artifactRoot: string;
+  readonly outputPath: string;
+  readonly timestampSeconds: number;
+}
+
+export interface ThumbnailMediaResult {
+  readonly thumbnailPath: string;
+  readonly artifactPath: string;
+  readonly durationMs: number;
+  readonly timestampSeconds: number;
+  readonly diagnostics: ProcessExecutionDiagnostics;
+}
+
+export interface ThumbnailMediaPort {
+  generate(input: ThumbnailMediaInput): Promise<ThumbnailMediaResult>;
+}
+
 export interface ExtractAudioInput {
   readonly filePath: string;
   readonly filename: string;
@@ -42,6 +88,7 @@ export interface ExtractAudioResult {
   readonly audioPath: string;
   readonly artifactPath: string;
   readonly durationMs: number;
+  readonly diagnostics?: ProcessExecutionDiagnostics;
 }
 
 export interface ExtractAudioPort {

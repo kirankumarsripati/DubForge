@@ -8,15 +8,19 @@ import type { DomainEventBus } from '@dubforge/platform-events';
 import { MEDIA_EVENTS } from '@dubforge/platform-events';
 import type { ExtensionRuntime } from '@dubforge/providers';
 
+import { Sha256FingerprintAdapter } from './adapters/fingerprint/sha256-fingerprint-adapter.js';
 import { FfmpegExtractAudioAdapter } from './adapters/ffmpeg/ffmpeg-extract-audio-adapter.js';
 import { FfmpegMuxAdapter } from './adapters/ffmpeg/ffmpeg-mux-adapter.js';
 import { FfmpegProbeAdapter } from './adapters/ffmpeg/ffmpeg-probe-adapter.js';
+import { FfmpegThumbnailAdapter } from './adapters/ffmpeg/ffmpeg-thumbnail-adapter.js';
 import { FixtureExtractAudioAdapter } from './adapters/ffmpeg/fixture-extract-audio-adapter.js';
 import { FixtureMuxAdapter } from './adapters/ffmpeg/fixture-mux-adapter.js';
 import { FixtureProbeAdapter } from './adapters/ffmpeg/fixture-probe-adapter.js';
 import { resolveGoldenFixturePath } from './integration/adapter-registry.js';
 import { MediaApplication } from './application/media-application.js';
 import { ImportMediaService } from './application/import-media-service.js';
+import { FingerprintMediaService } from './application/fingerprint-media-service.js';
+import { ThumbnailMediaService } from './application/thumbnail-media-service.js';
 import {
   ExtractAudioService,
   MuxMediaService,
@@ -25,12 +29,20 @@ import {
 import { FfprobeDiagnosticsCollector } from './diagnostics/ffprobe-diagnostics.js';
 import { MediaDiagnostics } from './diagnostics/media-diagnostics.js';
 import { MediaExecutionAdapter } from './integration/media-execution-adapter.js';
-import type { ExtractAudioPort, MuxMediaPort, ProbeMediaPort } from './ports/media-ports.js';
+import type {
+  ExtractAudioPort,
+  FingerprintMediaPort,
+  MuxMediaPort,
+  ProbeMediaPort,
+  ThumbnailMediaPort,
+} from './ports/media-ports.js';
 import { MediaRepository } from './repository/media-repository.js';
 import { MediaMigrationRunner } from './repository/sqlite/migrations.js';
 
 export interface MediaPlatformPorts {
+  readonly fingerprintPort: FingerprintMediaPort;
   readonly probePort: ProbeMediaPort;
+  readonly thumbnailPort: ThumbnailMediaPort;
   readonly extractPort: ExtractAudioPort;
   readonly muxPort: MuxMediaPort;
 }
@@ -44,7 +56,7 @@ export interface MediaPlatformOptions {
   readonly ffmpegPath?: string;
   readonly useFixtureAdapters?: boolean;
   readonly fixtureProbePath?: string;
-  readonly ports?: MediaPlatformPorts;
+  readonly ports?: Partial<MediaPlatformPorts>;
 }
 
 export interface MediaPlatform {
@@ -68,6 +80,9 @@ export function createMediaPlatform(options: MediaPlatformOptions): MediaPlatfor
 
   const repository = new MediaRepository(db);
   const diagnostics = new MediaDiagnostics();
+  const ffmpegPath = options.ffmpegPath ?? 'ffmpeg';
+
+  const fingerprintPort = options.ports?.fingerprintPort ?? new Sha256FingerprintAdapter();
 
   const probePort =
     options.ports?.probePort ??
@@ -77,17 +92,28 @@ export function createMediaPlatform(options: MediaPlatformOptions): MediaPlatfor
         })
       : new FfmpegProbeAdapter({ ffprobePath: options.ffprobePath ?? 'ffprobe' }));
 
+  const thumbnailPort =
+    options.ports?.thumbnailPort ??
+    (options.useFixtureAdapters
+      ? new FfmpegThumbnailAdapter({ ffmpegPath })
+      : new FfmpegThumbnailAdapter({ ffmpegPath }));
+
   const extractPort =
     options.ports?.extractPort ??
     (options.useFixtureAdapters
       ? new FixtureExtractAudioAdapter()
-      : new FfmpegExtractAudioAdapter({ ffmpegPath: options.ffmpegPath ?? 'ffmpeg' }));
+      : new FfmpegExtractAudioAdapter({ ffmpegPath }));
 
   const muxPort =
     options.ports?.muxPort ??
-    (options.useFixtureAdapters
-      ? new FixtureMuxAdapter()
-      : new FfmpegMuxAdapter({ ffmpegPath: options.ffmpegPath ?? 'ffmpeg' }));
+    (options.useFixtureAdapters ? new FixtureMuxAdapter() : new FfmpegMuxAdapter({ ffmpegPath }));
+
+  const fingerprintService = new FingerprintMediaService({
+    eventBus: options.eventBus,
+    repository,
+    fingerprintPort,
+    artifactSink: options.artifactSink,
+  });
 
   const probeService = new ProbeMediaService({
     eventBus: options.eventBus,
@@ -95,6 +121,13 @@ export function createMediaPlatform(options: MediaPlatformOptions): MediaPlatfor
     probePort,
     artifactSink: options.artifactSink,
     extensionRuntime: options.extensionRuntime,
+  });
+
+  const thumbnailService = new ThumbnailMediaService({
+    eventBus: options.eventBus,
+    repository,
+    thumbnailPort,
+    artifactSink: options.artifactSink,
   });
 
   const extractService = new ExtractAudioService({
@@ -111,13 +144,21 @@ export function createMediaPlatform(options: MediaPlatformOptions): MediaPlatfor
     artifactSink: options.artifactSink,
   });
 
-  const application = new MediaApplication(probeService, extractService, muxService);
+  const application = new MediaApplication(
+    fingerprintService,
+    probeService,
+    extractService,
+    muxService,
+  );
   const executionAdapter = new MediaExecutionAdapter(application);
   const ffprobeDiagnostics = new FfprobeDiagnosticsCollector();
   const importService = new ImportMediaService({
     eventBus: options.eventBus,
-    executionAdapter,
     repository,
+    fingerprintService,
+    probeService,
+    thumbnailService,
+    extractAudioService: extractService,
     ffprobeDiagnostics,
     artifactSink: options.artifactSink,
   });

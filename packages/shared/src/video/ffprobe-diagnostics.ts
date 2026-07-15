@@ -3,7 +3,10 @@ export interface FfprobeDiagnostics {
   readonly args: readonly string[];
   readonly command: string;
   readonly exitCode: number | null;
+  readonly stdout: string;
   readonly stderr: string;
+  readonly workingDirectory: string;
+  readonly durationMs: number;
 }
 
 export class FfprobeExecutionError extends Error {
@@ -38,7 +41,10 @@ export function formatFfprobeDiagnostics(diagnostics: FfprobeDiagnostics): strin
   return [
     `Executable: ${diagnostics.executablePath}`,
     `Command: ${diagnostics.command}`,
+    `Working directory: ${diagnostics.workingDirectory}`,
     `Exit code: ${exitCode}`,
+    `Duration: ${String(diagnostics.durationMs)}ms`,
+    `stdout: ${diagnostics.stdout.length > 0 ? diagnostics.stdout : '(empty)'}`,
     `stderr: ${diagnostics.stderr.length > 0 ? diagnostics.stderr : '(empty)'}`,
   ].join('\n');
 }

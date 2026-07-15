@@ -94,7 +94,21 @@ export const MIGRATION_002_MEDIA_IMPORT: Migration = {
   },
 };
 
+export const MIGRATION_003_MEDIA_ARTIFACTS: Migration = {
+  version: 3,
+  name: 'media-artifact-paths',
+  up: (db) => {
+    db.exec(`
+      ALTER TABLE media_files ADD COLUMN fingerprint_artifact_path TEXT;
+      ALTER TABLE media_files ADD COLUMN thumbnail_artifact_path TEXT;
+      ALTER TABLE media_files ADD COLUMN audio_artifact_path TEXT;
+      ALTER TABLE media_operations ADD COLUMN error_message TEXT;
+    `);
+  },
+};
+
 export const MEDIA_MIGRATIONS: readonly Migration[] = [
   MIGRATION_001_MEDIA_CATALOG,
   MIGRATION_002_MEDIA_IMPORT,
+  MIGRATION_003_MEDIA_ARTIFACTS,
 ];

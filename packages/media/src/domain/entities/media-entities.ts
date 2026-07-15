@@ -41,4 +41,5 @@ export interface MediaOperation {
   readonly durationMs: number | null;
   readonly createdAt: string;
   readonly completedAt: string | null;
+  readonly errorMessage: string | null;
 }

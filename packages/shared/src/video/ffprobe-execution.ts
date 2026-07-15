@@ -1,5 +1,3 @@
-import { execFile } from 'node:child_process';
-
 import { ffprobeOutputSchema } from './ffprobe-schema.js';
 import { parseFfprobeOutput } from './ffprobe-parser.js';
 import type { VideoProbeResult } from './types.js';
@@ -19,38 +17,47 @@ export {
   type FfprobeDiagnostics,
 } from './ffprobe-diagnostics.js';
 
-function execFileAsync(
+function readStreamOutput(value: string | Buffer | undefined): string {
+  if (value === undefined) {
+    return '';
+  }
+
+  return typeof value === 'string' ? value : value.toString('utf8');
+}
+
+function buildDiagnostics(
   executablePath: string,
   args: readonly string[],
-  options: { readonly maxBuffer: number },
-): Promise<{ readonly stdout: string }> {
-  return new Promise((resolve, reject) => {
-    execFile(executablePath, [...args], options, (error, stdout, stderr) => {
-      if (error) {
-        const execError = error as NodeJS.ErrnoException & {
-          readonly code?: number | string;
-          readonly stderr?: string | Buffer;
-          readonly cmd?: string;
-        };
-        Object.assign(execError, { stderr });
-        reject(execError);
-        return;
-      }
-
-      resolve({ stdout: stdout.toString() });
-    });
-  });
+  workingDirectory: string,
+  durationMs: number,
+  exitCode: number | null,
+  stdout: string,
+  stderr: string,
+): FfprobeDiagnostics {
+  return {
+    executablePath,
+    args,
+    command: formatCommand(executablePath, args),
+    exitCode,
+    stdout: stdout.trim(),
+    stderr: stderr.trim(),
+    workingDirectory,
+    durationMs,
+  };
 }
 
 function extractExecFailure(
   executablePath: string,
   args: readonly string[],
+  workingDirectory: string,
+  durationMs: number,
   error: unknown,
 ): FfprobeExecutionError {
   if (typeof error === 'object' && error !== null && 'code' in error) {
     const execError = error as NodeJS.ErrnoException & {
       readonly code?: number | string;
       readonly stderr?: string | Buffer;
+      readonly stdout?: string | Buffer;
       readonly cmd?: string;
     };
 
@@ -61,14 +68,22 @@ function extractExecFailure(
         : execError.stderr instanceof Buffer
           ? execError.stderr.toString('utf8')
           : execError.message;
+    const stdout =
+      typeof execError.stdout === 'string'
+        ? execError.stdout
+        : execError.stdout instanceof Buffer
+          ? execError.stdout.toString('utf8')
+          : '';
 
-    const diagnostics: FfprobeDiagnostics = {
+    const diagnostics = buildDiagnostics(
       executablePath,
       args,
-      command: execError.cmd ?? formatCommand(executablePath, args),
+      workingDirectory,
+      durationMs,
       exitCode,
-      stderr: stderr.trim(),
-    };
+      stdout,
+      stderr,
+    );
 
     if (execError.code === 'ENOENT') {
       return new FfprobeExecutionError(
@@ -85,13 +100,15 @@ function extractExecFailure(
     );
   }
 
-  const diagnostics: FfprobeDiagnostics = {
+  const diagnostics = buildDiagnostics(
     executablePath,
     args,
-    command: formatCommand(executablePath, args),
-    exitCode: null,
-    stderr: error instanceof Error ? error.message : 'Unknown ffprobe failure.',
-  };
+    workingDirectory,
+    durationMs,
+    null,
+    '',
+    error instanceof Error ? error.message : 'Unknown ffprobe failure.',
+  );
 
   return new FfprobeExecutionError(diagnostics.stderr, diagnostics);
 }
@@ -100,27 +117,45 @@ export async function runFfprobe(
   executablePath: string,
   filePath: string,
 ): Promise<{ readonly stdout: string; readonly diagnostics: FfprobeDiagnostics }> {
+  const startedAt = Date.now();
+  const workingDirectory = process.cwd();
   const args = buildFfprobeArgs(filePath);
-  const command = formatCommand(executablePath, args);
 
-  try {
-    const { stdout } = await execFileAsync(executablePath, args, {
-      maxBuffer: 10 * 1024 * 1024,
-    });
+  const { execFile } = await import('node:child_process');
 
-    return {
-      stdout,
-      diagnostics: {
-        executablePath,
-        args,
-        command,
-        exitCode: 0,
-        stderr: '',
+  return new Promise((resolve, reject) => {
+    execFile(
+      executablePath,
+      [...args],
+      {
+        cwd: workingDirectory,
+        maxBuffer: 10 * 1024 * 1024,
       },
-    };
-  } catch (error) {
-    throw extractExecFailure(executablePath, args, error);
-  }
+      (error, stdout, stderr) => {
+        const durationMs = Date.now() - startedAt;
+        const stdoutText = readStreamOutput(stdout);
+        const stderrText = readStreamOutput(stderr);
+
+        if (error) {
+          reject(extractExecFailure(executablePath, args, workingDirectory, durationMs, error));
+          return;
+        }
+
+        resolve({
+          stdout: stdoutText,
+          diagnostics: buildDiagnostics(
+            executablePath,
+            args,
+            workingDirectory,
+            durationMs,
+            0,
+            stdoutText,
+            stderrText,
+          ),
+        });
+      },
+    );
+  });
 }
 
 export async function probeVideoFile(

@@ -1,15 +1,16 @@
-import { execFile } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { promisify } from 'node:util';
 
+import {
+  ProcessExecutionError,
+  runProcess,
+  type ProcessExecutionDiagnostics,
+} from '../subprocess/process-execution.js';
 import type {
   ExtractAudioInput,
   ExtractAudioPort,
   ExtractAudioResult,
 } from '../../ports/media-ports.js';
-
-const execFileAsync = promisify(execFile);
 
 export interface FfmpegExtractAudioAdapterOptions {
   readonly ffmpegPath: string;
@@ -37,7 +38,24 @@ export class FfmpegExtractAudioAdapter implements ExtractAudioPort {
       audioPath,
     ];
 
-    await this.runFfmpeg(args, input.onProgress);
+    input.onProgress(0);
+
+    let diagnostics: ProcessExecutionDiagnostics;
+    try {
+      const result = await runProcess({
+        executablePath: this.options.ffmpegPath,
+        args,
+      });
+      diagnostics = result.diagnostics;
+      input.onProgress(100);
+    } catch (error) {
+      if (error instanceof ProcessExecutionError) {
+        throw error;
+      }
+
+      throw error;
+    }
+
     const durationMs = Date.now() - startedAt;
     const artifactPath = `${input.artifactRoot}/${input.nodeId}-extract-audio.json`;
 
@@ -45,10 +63,15 @@ export class FfmpegExtractAudioAdapter implements ExtractAudioPort {
       audioPath,
       artifactPath,
       durationMs,
+      diagnostics,
     };
   }
 
-  buildArtifactContent(input: ExtractAudioInput, audioPath: string): string {
+  buildArtifactContent(
+    input: ExtractAudioInput,
+    audioPath: string,
+    diagnostics: ProcessExecutionDiagnostics,
+  ): string {
     return JSON.stringify(
       {
         adapter: 'ffmpeg-extract-audio',
@@ -57,29 +80,10 @@ export class FfmpegExtractAudioAdapter implements ExtractAudioPort {
         sampleRate: 16000,
         channels: 1,
         codec: 'pcm_s16le',
+        diagnostics,
       },
       null,
       2,
     );
-  }
-
-  private async runFfmpeg(
-    args: readonly string[],
-    onProgress: (progress: number) => void,
-  ): Promise<void> {
-    onProgress(0);
-
-    try {
-      await execFileAsync(this.options.ffmpegPath, [...args], {
-        maxBuffer: 10 * 1024 * 1024,
-      });
-      onProgress(100);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(error.message || 'ffmpeg failed to extract audio.');
-      }
-
-      throw new Error('ffmpeg failed to extract audio.');
-    }
   }
 }

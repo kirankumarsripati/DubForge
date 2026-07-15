@@ -29,6 +29,12 @@ export type {
   ProbeMediaInput,
   ProbeMediaResult,
   ProbeMediaPort,
+  FingerprintMediaInput,
+  FingerprintMediaResult,
+  FingerprintMediaPort,
+  ThumbnailMediaInput,
+  ThumbnailMediaResult,
+  ThumbnailMediaPort,
   ExtractAudioInput,
   ExtractAudioResult,
   ExtractAudioPort,
@@ -43,9 +49,12 @@ export { MediaRepository, type CreateMediaFileInput } from './repository/media-r
 export { MediaApplication } from './application/media-application.js';
 export {
   ImportMediaService,
-  type ImportMediaProbeInput,
-  type ImportMediaProbeResult,
+  type ImportMediaInput,
+  type ImportMediaArtifacts,
+  type ImportMediaResult,
 } from './application/import-media-service.js';
+export { FingerprintMediaService } from './application/fingerprint-media-service.js';
+export { ThumbnailMediaService } from './application/thumbnail-media-service.js';
 export {
   ProbeMediaService,
   ExtractAudioService,
@@ -58,7 +67,10 @@ export {
 } from './diagnostics/ffprobe-diagnostics.js';
 export { MediaDiagnostics, type MediaDiagnosticEntry } from './diagnostics/media-diagnostics.js';
 
+export { MEDIA_IMPORT_NODE_IDS } from './domain/constants.js';
+export { Sha256FingerprintAdapter } from './adapters/fingerprint/sha256-fingerprint-adapter.js';
 export { FfmpegProbeAdapter } from './adapters/ffmpeg/ffmpeg-probe-adapter.js';
+export { FfmpegThumbnailAdapter } from './adapters/ffmpeg/ffmpeg-thumbnail-adapter.js';
 export { FfmpegExtractAudioAdapter } from './adapters/ffmpeg/ffmpeg-extract-audio-adapter.js';
 export { FfmpegMuxAdapter } from './adapters/ffmpeg/ffmpeg-mux-adapter.js';
 export { FixtureProbeAdapter } from './adapters/ffmpeg/fixture-probe-adapter.js';

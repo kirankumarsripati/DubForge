@@ -1,4 +1,4 @@
-import { access, realpath } from 'node:fs/promises';
+import { access, copyFile, realpath } from 'node:fs/promises';
 import { basename, extname, resolve } from 'node:path';
 import type { ImportMediaService } from '@dubforge/media';
 import type { FfprobeDiagnosticsCollector } from '@dubforge/media';
@@ -70,9 +70,9 @@ export class VideoImportService {
       });
     }
 
-    let probeResult;
+    let importResult;
     try {
-      probeResult = await this.importMediaService.probeImportedFile({
+      importResult = await this.importMediaService.importVideoFile({
         filePath: normalizedPath,
         filename,
         contentHash: videoId,
@@ -97,7 +97,7 @@ export class VideoImportService {
       throw error;
     }
 
-    const probeFailure = validateVideoProbe(probeResult.probe);
+    const probeFailure = validateVideoProbe(importResult.probe);
     if (probeFailure !== null) {
       throw new VideoImportError(probeFailure);
     }
@@ -108,16 +108,19 @@ export class VideoImportService {
       filename,
       fileSizeBytes,
       fileModifiedAtMs,
-      probe: probeResult.probe,
+      probe: importResult.probe,
     });
 
     await this.cacheService.writeCachedRecord(record);
+
+    const { thumbnailPath } = this.cacheService.getPaths(videoId);
+    await copyFile(importResult.artifacts.thumbnail, thumbnailPath);
 
     return this.finalizeImport({
       normalizedPath,
       videoId,
       record,
-      allowMissingThumbnail: false,
+      allowMissingThumbnail: true,
     });
   }
 

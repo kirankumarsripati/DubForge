@@ -1,7 +1,16 @@
 export const MEDIA_OPERATION_KINDS = {
+  FINGERPRINT: 'fingerprint',
   PROBE: 'probe',
+  THUMBNAIL: 'thumbnail',
   EXTRACT_AUDIO: 'extract-audio',
   MUX: 'mux',
+} as const;
+
+export const MEDIA_IMPORT_NODE_IDS = {
+  FINGERPRINT: 'fingerprint',
+  METADATA: 'metadata',
+  THUMBNAIL: 'thumbnail',
+  EXTRACT_AUDIO: 'extract-audio',
 } as const;
 
 export type MediaOperationKind = (typeof MEDIA_OPERATION_KINDS)[keyof typeof MEDIA_OPERATION_KINDS];

@@ -24,6 +24,7 @@ export class MediaExecutionAdapter implements ExecutionAdapter {
 }
 
 export const MEDIA_NODE_KINDS: readonly NodeKind[] = [
+  NODE_KINDS.FINGERPRINT,
   NODE_KINDS.METADATA,
   NODE_KINDS.EXTRACT_AUDIO,
   NODE_KINDS.MUX,

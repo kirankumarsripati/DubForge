@@ -88,6 +88,40 @@ function getCompletedNodeIds(state: WorkflowState): Set<NodeId> {
   return completed;
 }
 
+function skipBlockedNodes(state: WorkflowState): WorkflowState {
+  let changed = true;
+  let nextState = state;
+
+  while (changed) {
+    changed = false;
+
+    for (const node of nextState.graph.nodes.values()) {
+      const nodeState = nextState.nodeStates.get(node.id);
+      if (nodeState?.status !== NODE_STATUSES.PENDING) {
+        continue;
+      }
+
+      const blockedByFailure = node.dependencies.some((dependencyId) => {
+        const dependencyState = nextState.nodeStates.get(dependencyId);
+        return (
+          dependencyState?.status === NODE_STATUSES.FAILED ||
+          dependencyState?.status === NODE_STATUSES.SKIPPED
+        );
+      });
+
+      if (blockedByFailure) {
+        nextState = updateNodeState(nextState, node.id, {
+          status: NODE_STATUSES.SKIPPED,
+          error: 'Skipped because an upstream node failed.',
+        });
+        changed = true;
+      }
+    }
+  }
+
+  return nextState;
+}
+
 function getPendingReadyNodes(state: WorkflowState): DagNode[] {
   const completed = getCompletedNodeIds(state);
   const ready: DagNode[] = [];
@@ -237,15 +271,8 @@ export class Scheduler {
           }
         }
       } else if (completedNodeState?.status === NODE_STATUSES.FAILED) {
-        state = {
-          ...state,
-          status: WORKFLOW_STATUSES.FAILED,
-          updatedAt: new Date().toISOString(),
-        };
+        state = skipBlockedNodes(state);
         await this.persistState(state);
-        this.publishWorkflowEvent(WORKFLOW_EVENT_TYPES.WORKFLOW_FAILED, state);
-        this.publishDomainWorkflowEvent(WORKFLOW_EVENTS.FAILED, state);
-        return state;
       }
     }
 

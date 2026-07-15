@@ -29,6 +29,9 @@ interface MediaFileRow {
   readonly fileModifiedAtMs: number | null;
   readonly frameRate: number | null;
   readonly metadataArtifactPath: string | null;
+  readonly fingerprintArtifactPath: string | null;
+  readonly thumbnailArtifactPath: string | null;
+  readonly audioArtifactPath: string | null;
 }
 
 interface MediaOperationRow {
@@ -43,6 +46,14 @@ interface MediaOperationRow {
   readonly durationMs: number | null;
   readonly createdAt: string;
   readonly completedAt: string | null;
+  readonly errorMessage: string | null;
+}
+
+export interface UpdateMediaFileArtifactsInput {
+  readonly fingerprintArtifactPath?: string | null;
+  readonly metadataArtifactPath?: string | null;
+  readonly thumbnailArtifactPath?: string | null;
+  readonly audioArtifactPath?: string | null;
 }
 
 export interface CreateMediaFileInput {
@@ -102,6 +113,7 @@ function mapMediaOperationRow(row: MediaOperationRow): MediaOperation {
     durationMs: row.durationMs,
     createdAt: row.createdAt,
     completedAt: row.completedAt,
+    errorMessage: row.errorMessage,
   };
 }
 
@@ -113,6 +125,8 @@ export class MediaRepository {
   private readonly selectOperationsByWorkflow: Database.Statement;
 
   private readonly selectMediaFileByContentHash: Database.Statement;
+
+  private readonly updateMediaFileArtifactsStatement: Database.Statement;
 
   constructor(private readonly db: Database.Database) {
     this.insertMediaFile = db.prepare(`
@@ -130,10 +144,10 @@ export class MediaRepository {
     this.insertMediaOperation = db.prepare(`
       INSERT INTO media_operations (
         id, kind, media_file_id, workflow_id, job_id, node_id, status,
-        artifact_path, duration_ms, created_at, completed_at
+        artifact_path, duration_ms, created_at, completed_at, error_message
       ) VALUES (
         @id, @kind, @mediaFileId, @workflowId, @jobId, @nodeId, @status,
-        @artifactPath, @durationMs, @createdAt, @completedAt
+        @artifactPath, @durationMs, @createdAt, @completedAt, @errorMessage
       )
     `);
 
@@ -142,7 +156,17 @@ export class MediaRepository {
       SET status = @status,
           artifact_path = @artifactPath,
           duration_ms = @durationMs,
-          completed_at = @completedAt
+          completed_at = @completedAt,
+          error_message = @errorMessage
+      WHERE id = @id
+    `);
+
+    this.updateMediaFileArtifactsStatement = db.prepare(`
+      UPDATE media_files
+      SET fingerprint_artifact_path = COALESCE(@fingerprintArtifactPath, fingerprint_artifact_path),
+          metadata_artifact_path = COALESCE(@metadataArtifactPath, metadata_artifact_path),
+          thumbnail_artifact_path = COALESCE(@thumbnailArtifactPath, thumbnail_artifact_path),
+          audio_artifact_path = COALESCE(@audioArtifactPath, audio_artifact_path)
       WHERE id = @id
     `);
 
@@ -210,7 +234,8 @@ export class MediaRepository {
         artifact_path AS artifactPath,
         duration_ms AS durationMs,
         created_at AS createdAt,
-        completed_at AS completedAt
+        completed_at AS completedAt,
+        error_message AS errorMessage
       FROM media_operations
       WHERE workflow_id = ?
       ORDER BY created_at ASC
@@ -261,6 +286,28 @@ export class MediaRepository {
       fileModifiedAtMs: input.fileModifiedAtMs ?? null,
       frameRate: input.frameRate ?? null,
       metadataArtifactPath: input.metadataArtifactPath ?? null,
+      fingerprintArtifactPath: null,
+      thumbnailArtifactPath: null,
+      audioArtifactPath: null,
+    });
+  }
+
+  reassignWorkflowId(previousWorkflowId: string, nextWorkflowId: string): void {
+    this.db
+      .prepare('UPDATE media_files SET workflow_id = ? WHERE workflow_id = ?')
+      .run(nextWorkflowId, previousWorkflowId);
+    this.db
+      .prepare('UPDATE media_operations SET workflow_id = ? WHERE workflow_id = ?')
+      .run(nextWorkflowId, previousWorkflowId);
+  }
+
+  updateMediaFileArtifacts(mediaFileId: string, input: UpdateMediaFileArtifactsInput): void {
+    this.updateMediaFileArtifactsStatement.run({
+      id: mediaFileId,
+      fingerprintArtifactPath: input.fingerprintArtifactPath ?? null,
+      metadataArtifactPath: input.metadataArtifactPath ?? null,
+      thumbnailArtifactPath: input.thumbnailArtifactPath ?? null,
+      audioArtifactPath: input.audioArtifactPath ?? null,
     });
   }
 
@@ -280,6 +327,7 @@ export class MediaRepository {
       durationMs: null,
       createdAt,
       completedAt: null,
+      errorMessage: null,
     });
 
     return mapMediaOperationRow({
@@ -294,6 +342,7 @@ export class MediaRepository {
       durationMs: null,
       createdAt,
       completedAt: null,
+      errorMessage: null,
     });
   }
 
@@ -306,6 +355,7 @@ export class MediaRepository {
       artifactPath,
       durationMs,
       completedAt,
+      errorMessage: null,
     });
 
     const row = this.db
@@ -336,7 +386,7 @@ export class MediaRepository {
     return mapMediaOperationRow(row);
   }
 
-  failOperation(operationId: string): MediaOperation {
+  failOperation(operationId: string, errorMessage: string): MediaOperation {
     const completedAt = new Date().toISOString();
 
     this.updateMediaOperation.run({
@@ -345,6 +395,7 @@ export class MediaRepository {
       artifactPath: null,
       durationMs: null,
       completedAt,
+      errorMessage,
     });
 
     const row = this.db

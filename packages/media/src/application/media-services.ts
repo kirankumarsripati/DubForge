@@ -1,17 +1,30 @@
 import type { ArtifactSink } from '@dubforge/platform-execution-adapters';
 import type { DomainEventBus } from '@dubforge/platform-events';
-import { FfprobeExecutionError, type VideoProbeResult } from '@dubforge/shared';
+import {
+  FfprobeExecutionError,
+  formatFfprobeDiagnostics,
+  type VideoProbeResult,
+} from '@dubforge/shared';
 import { PIPELINE_STAGE_CAPABILITY } from '@dubforge/providers';
 import type { ExtensionRuntime } from '@dubforge/providers';
 import { NODE_KINDS } from '@dubforge/types';
 
+import {
+  ProcessExecutionError,
+  formatProcessDiagnostics,
+} from '../adapters/subprocess/process-execution.js';
 import { MEDIA_OPERATION_KINDS } from '../domain/constants.js';
 import type { ProbeMediaPort } from '../ports/media-ports.js';
-import type { ExtractAudioInput, ExtractAudioPort } from '../ports/media-ports.js';
+import type {
+  ExtractAudioInput,
+  ExtractAudioPort,
+  ExtractAudioResult,
+} from '../ports/media-ports.js';
 import type { MuxMediaInput, MuxMediaPort } from '../ports/media-ports.js';
 import { MediaRepository } from '../repository/media-repository.js';
 import {
   publishMediaDiagnostic,
+  publishMediaAudioExtracted,
   publishMediaFileProbed,
   publishMediaOperationCompleted,
   publishMediaOperationFailed,
@@ -209,8 +222,13 @@ export class ProbeMediaService {
         durationMs: result.durationMs,
       };
     } catch (error) {
-      const failed = this.options.repository.failOperation(operation.id);
-      const message = error instanceof Error ? error.message : 'Media probe failed.';
+      const message =
+        error instanceof FfprobeExecutionError
+          ? formatFfprobeDiagnostics(error.diagnostics)
+          : error instanceof Error
+            ? error.message
+            : 'Media probe failed.';
+      const failed = this.options.repository.failOperation(operation.id, message);
       if (error instanceof FfprobeExecutionError) {
         publishMediaDiagnostic({
           eventBus: this.options.eventBus,
@@ -218,7 +236,7 @@ export class ProbeMediaService {
           jobId: input.jobId,
           nodeId: input.nodeId,
           level: 'error',
-          message: error.diagnostics.stderr || error.message,
+          message,
         });
       }
       publishMediaOperationFailed({
@@ -292,6 +310,7 @@ export class ExtractAudioService {
         this.options.extractPort,
         extractInput,
         result.audioPath,
+        result.diagnostics,
       );
 
       const sink = input.artifactSink ?? this.options.artifactSink;
@@ -299,11 +318,26 @@ export class ExtractAudioService {
         await sink.writeText(result.artifactPath, artifactContent);
       }
 
+      if (mediaFile !== null) {
+        this.options.repository.updateMediaFileArtifacts(mediaFile.id, {
+          audioArtifactPath: result.audioPath,
+        });
+      }
+
       const completed = this.options.repository.completeOperation(
         operation.id,
         result.artifactPath,
         result.durationMs,
       );
+
+      publishMediaAudioExtracted({
+        eventBus: this.options.eventBus,
+        workflowId: input.workflowId,
+        jobId: input.jobId,
+        nodeId: input.nodeId,
+        artifactPath: result.artifactPath,
+        audioPath: result.audioPath,
+      });
 
       publishMediaOperationCompleted({
         eventBus: this.options.eventBus,
@@ -322,8 +356,21 @@ export class ExtractAudioService {
         durationMs: result.durationMs,
       };
     } catch (error) {
-      const failed = this.options.repository.failOperation(operation.id);
-      const message = error instanceof Error ? error.message : 'Audio extraction failed.';
+      const message =
+        error instanceof ProcessExecutionError
+          ? formatProcessDiagnostics(error.diagnostics)
+          : error instanceof Error
+            ? error.message
+            : 'Audio extraction failed.';
+      const failed = this.options.repository.failOperation(operation.id, message);
+      publishMediaDiagnostic({
+        eventBus: this.options.eventBus,
+        workflowId: input.workflowId,
+        jobId: input.jobId,
+        nodeId: input.nodeId,
+        level: 'error',
+        message,
+      });
       publishMediaOperationFailed({
         eventBus: this.options.eventBus,
         workflowId: input.workflowId,
@@ -428,7 +475,10 @@ export class MuxMediaService {
         durationMs: result.durationMs,
       };
     } catch (error) {
-      const failed = this.options.repository.failOperation(operation.id);
+      const failed = this.options.repository.failOperation(
+        operation.id,
+        error instanceof Error ? error.message : 'Mux operation failed.',
+      );
       const message = error instanceof Error ? error.message : 'Mux operation failed.';
       publishMediaOperationFailed({
         eventBus: this.options.eventBus,
@@ -447,16 +497,31 @@ interface ArtifactContentBuilder<TInput> {
   buildArtifactContent(input: TInput, outputPath: string): string;
 }
 
+interface ExtractArtifactContentBuilder extends ExtractAudioPort {
+  buildArtifactContent(
+    input: ExtractAudioInput,
+    audioPath: string,
+    diagnostics?: ExtractAudioResult['diagnostics'],
+  ): string;
+}
+
+function isExtractArtifactContentBuilder(
+  port: ExtractAudioPort,
+): port is ExtractArtifactContentBuilder {
+  return 'buildArtifactContent' in port && typeof port.buildArtifactContent === 'function';
+}
+
 function buildExtractArtifactContent(
   extractPort: ExtractAudioPort,
   input: ExtractAudioInput,
   audioPath: string,
+  diagnostics?: ExtractAudioResult['diagnostics'],
 ): string {
-  if (hasArtifactContentBuilder<ExtractAudioInput>(extractPort)) {
-    return extractPort.buildArtifactContent(input, audioPath);
+  if (isExtractArtifactContentBuilder(extractPort)) {
+    return extractPort.buildArtifactContent(input, audioPath, diagnostics);
   }
 
-  return JSON.stringify({ adapter: 'extract-audio', audioPath }, null, 2);
+  return JSON.stringify({ adapter: 'extract-audio', audioPath, diagnostics }, null, 2);
 }
 
 function buildMuxArtifactContent(

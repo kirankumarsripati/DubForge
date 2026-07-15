@@ -16,7 +16,10 @@ describe('ffprobe execution helpers', () => {
       args: ['-version'],
       command: '/usr/bin/ffprobe -version',
       exitCode: 1,
+      stdout: '',
       stderr: 'Invalid data',
+      workingDirectory: '/tmp',
+      durationMs: 42,
     });
 
     expect(formatted).toContain('Executable: /usr/bin/ffprobe');
@@ -30,7 +33,10 @@ describe('ffprobe execution helpers', () => {
       args: [],
       command: '/usr/bin/ffprobe',
       exitCode: 1,
+      stdout: '',
       stderr: 'failed',
+      workingDirectory: '/tmp',
+      durationMs: 12,
     });
 
     expect(failure.title).toBe('Unable to read video');

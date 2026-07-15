@@ -47,6 +47,10 @@ export const OBSERVABILITY_EVENTS = {
 
 export const MEDIA_EVENTS = {
   FILE_PROBED: 'media.file-probed',
+  FINGERPRINT_COMPUTED: 'media.fingerprint-computed',
+  THUMBNAIL_GENERATED: 'media.thumbnail-generated',
+  AUDIO_EXTRACTED: 'media.audio-extracted',
+  IMPORT_COMPLETED: 'media.import-completed',
   OPERATION_STARTED: 'media.operation-started',
   OPERATION_COMPLETED: 'media.operation-completed',
   OPERATION_FAILED: 'media.operation-failed',
@@ -229,6 +233,34 @@ export interface MediaFileProbedEvent extends DomainEventBase {
   readonly durationSeconds: number;
   readonly resolution: string;
   readonly videoCodec: string;
+}
+
+export interface MediaFingerprintComputedEvent extends DomainEventBase {
+  readonly type: typeof MEDIA_EVENTS.FINGERPRINT_COMPUTED;
+  readonly nodeId: string;
+  readonly contentHash: string;
+  readonly artifactPath: string;
+}
+
+export interface MediaThumbnailGeneratedEvent extends DomainEventBase {
+  readonly type: typeof MEDIA_EVENTS.THUMBNAIL_GENERATED;
+  readonly nodeId: string;
+  readonly artifactPath: string;
+  readonly thumbnailPath: string;
+}
+
+export interface MediaAudioExtractedEvent extends DomainEventBase {
+  readonly type: typeof MEDIA_EVENTS.AUDIO_EXTRACTED;
+  readonly nodeId: string;
+  readonly artifactPath: string;
+  readonly audioPath: string;
+}
+
+export interface MediaImportCompletedEvent extends DomainEventBase {
+  readonly type: typeof MEDIA_EVENTS.IMPORT_COMPLETED;
+  readonly mediaFileId: string;
+  readonly contentHash: string;
+  readonly artifactPaths: Readonly<Record<string, string>>;
 }
 
 export interface MediaOperationEvent extends DomainEventBase {
@@ -508,6 +540,10 @@ export type DomainEvent =
   | ObservabilityTimelineEvent
   | ObservabilitySpanEvent
   | MediaFileProbedEvent
+  | MediaFingerprintComputedEvent
+  | MediaThumbnailGeneratedEvent
+  | MediaAudioExtractedEvent
+  | MediaImportCompletedEvent
   | MediaOperationEvent
   | MediaArtifactProducedEvent
   | MediaDiagnosticEvent

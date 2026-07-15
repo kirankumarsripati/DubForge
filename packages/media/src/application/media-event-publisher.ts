@@ -28,6 +28,79 @@ export function publishMediaFileProbed(
   });
 }
 
+export function publishMediaFingerprintComputed(
+  input: PublishMediaEventInput & {
+    readonly contentHash: string;
+    readonly artifactPath: string;
+  },
+): void {
+  input.eventBus.publish({
+    id: createDomainEventId(),
+    type: MEDIA_EVENTS.FINGERPRINT_COMPUTED,
+    timestamp: new Date().toISOString(),
+    workflowId: input.workflowId,
+    jobId: input.jobId,
+    nodeId: input.nodeId,
+    contentHash: input.contentHash,
+    artifactPath: input.artifactPath,
+  });
+}
+
+export function publishMediaThumbnailGenerated(
+  input: PublishMediaEventInput & {
+    readonly artifactPath: string;
+    readonly thumbnailPath: string;
+  },
+): void {
+  input.eventBus.publish({
+    id: createDomainEventId(),
+    type: MEDIA_EVENTS.THUMBNAIL_GENERATED,
+    timestamp: new Date().toISOString(),
+    workflowId: input.workflowId,
+    jobId: input.jobId,
+    nodeId: input.nodeId,
+    artifactPath: input.artifactPath,
+    thumbnailPath: input.thumbnailPath,
+  });
+}
+
+export function publishMediaAudioExtracted(
+  input: PublishMediaEventInput & {
+    readonly artifactPath: string;
+    readonly audioPath: string;
+  },
+): void {
+  input.eventBus.publish({
+    id: createDomainEventId(),
+    type: MEDIA_EVENTS.AUDIO_EXTRACTED,
+    timestamp: new Date().toISOString(),
+    workflowId: input.workflowId,
+    jobId: input.jobId,
+    nodeId: input.nodeId,
+    artifactPath: input.artifactPath,
+    audioPath: input.audioPath,
+  });
+}
+
+export function publishMediaImportCompleted(
+  input: Omit<PublishMediaEventInput, 'nodeId'> & {
+    readonly mediaFileId: string;
+    readonly contentHash: string;
+    readonly artifactPaths: Readonly<Record<string, string>>;
+  },
+): void {
+  input.eventBus.publish({
+    id: createDomainEventId(),
+    type: MEDIA_EVENTS.IMPORT_COMPLETED,
+    timestamp: new Date().toISOString(),
+    workflowId: input.workflowId,
+    jobId: input.jobId,
+    mediaFileId: input.mediaFileId,
+    contentHash: input.contentHash,
+    artifactPaths: input.artifactPaths,
+  });
+}
+
 export function publishMediaOperationStarted(
   input: PublishMediaEventInput & { readonly operation: MediaOperation },
 ): void {
