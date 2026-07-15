@@ -1,5 +1,4 @@
-import type { AssetDiagnostics, Model, VerifyModelResult } from '@dubforge/types';
-import { MODEL_IPC_CHANNELS } from '@dubforge/shared';
+import type { Model, VerifyModelResult } from '@dubforge/types';
 
 function toModel(response: Model): Model {
   return response;

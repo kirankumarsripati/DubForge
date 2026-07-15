@@ -3,7 +3,5 @@ export {
   FfprobeExecutionError,
   FfprobeParseError,
   formatFfprobeDiagnostics,
-  probeVideoFile,
-  runFfprobe,
   type FfprobeDiagnostics,
-} from '../video/ffprobe-execution.js';
+} from '../video/ffprobe-diagnostics.js';

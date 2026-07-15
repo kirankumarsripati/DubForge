@@ -14,6 +14,7 @@ const MOCK_STAGE_DURATIONS_MS: Readonly<Record<NodeKind, number>> = {
   validate: 50,
   fingerprint: 40,
   metadata: 40,
+  thumbnail: 60,
   'extract-audio': 80,
   'speech-recognition': 120,
   'english-transcript': 30,

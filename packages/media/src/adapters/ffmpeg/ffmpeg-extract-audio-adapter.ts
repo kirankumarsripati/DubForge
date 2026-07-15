@@ -2,15 +2,22 @@ import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
 import {
-  ProcessExecutionError,
-  runProcess,
-  type ProcessExecutionDiagnostics,
-} from '../subprocess/process-execution.js';
+  runBinaryProcess,
+  type BinaryProcessDiagnostics,
+} from '@dubforge/platform-execution-adapters';
+
+import { MEDIA_ARTIFACT_FILENAMES } from '../../domain/artifact-names.js';
 import type {
   ExtractAudioInput,
   ExtractAudioPort,
   ExtractAudioResult,
 } from '../../ports/media-ports.js';
+
+export {
+  BinaryProcessError as ProcessExecutionError,
+  formatBinaryDiagnostics as formatProcessDiagnostics,
+  type BinaryProcessDiagnostics as ProcessExecutionDiagnostics,
+} from '@dubforge/platform-execution-adapters';
 
 export interface FfmpegExtractAudioAdapterOptions {
   readonly ffmpegPath: string;
@@ -40,37 +47,28 @@ export class FfmpegExtractAudioAdapter implements ExtractAudioPort {
 
     input.onProgress(0);
 
-    let diagnostics: ProcessExecutionDiagnostics;
-    try {
-      const result = await runProcess({
-        executablePath: this.options.ffmpegPath,
-        args,
-      });
-      diagnostics = result.diagnostics;
-      input.onProgress(100);
-    } catch (error) {
-      if (error instanceof ProcessExecutionError) {
-        throw error;
-      }
+    const result = await runBinaryProcess({
+      executablePath: this.options.ffmpegPath,
+      args,
+    });
 
-      throw error;
-    }
+    input.onProgress(100);
 
     const durationMs = Date.now() - startedAt;
-    const artifactPath = `${input.artifactRoot}/${input.nodeId}-extract-audio.json`;
+    const artifactPath = `${input.artifactRoot}/${MEDIA_ARTIFACT_FILENAMES.AUDIO_MANIFEST}`;
 
     return {
       audioPath,
       artifactPath,
       durationMs,
-      diagnostics,
+      diagnostics: result.diagnostics,
     };
   }
 
   buildArtifactContent(
     input: ExtractAudioInput,
     audioPath: string,
-    diagnostics: ProcessExecutionDiagnostics,
+    diagnostics: BinaryProcessDiagnostics,
   ): string {
     return JSON.stringify(
       {

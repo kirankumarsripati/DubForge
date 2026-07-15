@@ -1,22 +1,25 @@
+import { readFile } from 'node:fs/promises';
+
 import type { ArtifactSink } from '@dubforge/platform-execution-adapters';
 import type { DomainEventBus } from '@dubforge/platform-events';
+import { DEFAULT_OUTPUT_CONFIGURATION } from '@dubforge/job-config';
+import type { NodeExecutionPort, CancellationSignal } from '@dubforge/platform-execution';
 import {
   calculateThumbnailTimestampSeconds,
   createFfprobeValidationFailure,
   FfprobeExecutionError,
   FfprobeParseError,
+  validateVideoProbe,
   VideoValidationException,
   type VideoProbeResult,
 } from '@dubforge/shared';
+import { NODE_KINDS } from '@dubforge/types';
 
+import { MEDIA_ARTIFACT_FILENAMES } from '../domain/artifact-names.js';
 import { MEDIA_IMPORT_NODE_IDS } from '../domain/constants.js';
 import type { MediaFile } from '../domain/entities/media-entities.js';
 import type { FfprobeDiagnosticsCollector } from '../diagnostics/ffprobe-diagnostics.js';
 import type { MediaRepository } from '../repository/media-repository.js';
-import { ExtractAudioService } from './media-services.js';
-import { FingerprintMediaService } from './fingerprint-media-service.js';
-import { ProbeMediaService } from './media-services.js';
-import { ThumbnailMediaService } from './thumbnail-media-service.js';
 import { publishMediaImportCompleted } from './media-event-publisher.js';
 
 export interface ImportMediaInput {
@@ -30,6 +33,7 @@ export interface ImportMediaInput {
 }
 
 export interface ImportMediaArtifacts {
+  readonly validate: string;
   readonly fingerprint: string;
   readonly metadata: string;
   readonly thumbnail: string;
@@ -48,37 +52,55 @@ export interface ImportMediaResult {
 export interface ImportMediaServiceOptions {
   readonly eventBus: DomainEventBus;
   readonly repository: MediaRepository;
-  readonly fingerprintService: FingerprintMediaService;
-  readonly probeService: ProbeMediaService;
-  readonly thumbnailService: ThumbnailMediaService;
-  readonly extractAudioService: ExtractAudioService;
+  readonly nodeExecutor: NodeExecutionPort;
   readonly ffprobeDiagnostics: FfprobeDiagnosticsCollector;
   readonly artifactSink?: ArtifactSink;
 }
+
+const IMPORT_JOB_ID = 'import';
+const IMPORT_PROFILE = 'balanced' as const;
+
+const IMPORT_ABORT_SIGNAL: CancellationSignal = {
+  aborted: false,
+  addEventListener: () => undefined,
+};
 
 export class ImportMediaService {
   constructor(private readonly options: ImportMediaServiceOptions) {}
 
   async importVideoFile(input: ImportMediaInput): Promise<ImportMediaResult> {
-    const jobId = 'import';
     const artifactSink = input.artifactSink ?? this.options.artifactSink;
+    const importArtifacts = {
+      __import_file_size: String(input.fileSizeBytes),
+      __import_file_modified: String(input.fileModifiedAtMs),
+    };
 
-    const fingerprintResult = await this.options.fingerprintService.fingerprintForWorkflow({
-      filePath: input.filePath,
-      filename: input.filename,
+    await this.executeImportNode({
       workflowId: 'import:pending',
-      jobId,
-      nodeId: MEDIA_IMPORT_NODE_IDS.FINGERPRINT,
-      artifactRoot: input.artifactRoot,
-      fileSizeBytes: input.fileSizeBytes,
-      fileModifiedAtMs: input.fileModifiedAtMs,
+      nodeId: MEDIA_IMPORT_NODE_IDS.VALIDATE,
+      nodeKind: NODE_KINDS.VALIDATE,
+      input,
+      artifacts: importArtifacts,
       artifactSink,
     });
 
-    const contentHash = fingerprintResult.contentHash;
+    const fingerprintResult = await this.executeImportNode({
+      workflowId: 'import:pending',
+      nodeId: MEDIA_IMPORT_NODE_IDS.FINGERPRINT,
+      nodeKind: NODE_KINDS.FINGERPRINT,
+      input,
+      artifacts: importArtifacts,
+      artifactSink,
+    });
+
     const fingerprintArtifact = fingerprintResult.artifacts.fingerprint;
     if (fingerprintArtifact === undefined) {
       throw new Error('Fingerprint stage did not register a fingerprint artifact.');
+    }
+
+    const contentHash = fingerprintResult.artifacts.contentHash;
+    if (contentHash === undefined || contentHash.length === 0) {
+      throw new Error('Fingerprint stage did not produce a content hash.');
     }
 
     if (input.contentHash !== undefined && input.contentHash !== contentHash) {
@@ -88,18 +110,14 @@ export class ImportMediaService {
     const workflowId = `import:${contentHash}`;
     this.options.repository.reassignWorkflowId('import:pending', workflowId);
 
-    let probeResult;
     try {
-      const metadataResult = await this.options.probeService.probeForWorkflow({
-        filePath: input.filePath,
-        filename: input.filename,
+      const metadataResult = await this.executeImportNode({
         workflowId,
-        jobId,
         nodeId: MEDIA_IMPORT_NODE_IDS.METADATA,
-        artifactRoot: input.artifactRoot,
+        nodeKind: NODE_KINDS.METADATA,
+        input,
+        artifacts: importArtifacts,
         artifactSink,
-        fileSizeBytes: input.fileSizeBytes,
-        fileModifiedAtMs: input.fileModifiedAtMs,
       });
 
       const metadataArtifactPath = metadataResult.artifacts.metadata;
@@ -107,7 +125,6 @@ export class ImportMediaService {
         throw new Error('Metadata probe did not register a metadata artifact.');
       }
 
-      const { readFile } = await import('node:fs/promises');
       const artifactContent = JSON.parse(await readFile(metadataArtifactPath, 'utf8')) as {
         readonly probe: VideoProbeResult;
         readonly diagnostics?: Parameters<
@@ -122,7 +139,11 @@ export class ImportMediaService {
         });
       }
 
-      probeResult = artifactContent.probe;
+      const probeResult = artifactContent.probe;
+      const probeFailure = validateVideoProbe(probeResult);
+      if (probeFailure !== null) {
+        throw new VideoValidationException(probeFailure);
+      }
 
       const mediaFileAfterProbe = this.options.repository.findMediaFileByContentHash(contentHash);
       if (mediaFileAfterProbe !== null) {
@@ -132,26 +153,27 @@ export class ImportMediaService {
       }
 
       const thumbnailTimestamp = calculateThumbnailTimestampSeconds(probeResult.durationSeconds);
-      const thumbnailResult = await this.options.thumbnailService.generateForWorkflow({
-        filePath: input.filePath,
-        filename: input.filename,
+      const thumbnailResult = await this.executeImportNode({
         workflowId,
-        jobId,
         nodeId: MEDIA_IMPORT_NODE_IDS.THUMBNAIL,
-        artifactRoot: input.artifactRoot,
-        timestampSeconds: thumbnailTimestamp,
+        nodeKind: NODE_KINDS.THUMBNAIL,
+        input,
+        artifacts: {
+          ...importArtifacts,
+          __thumbnail_timestamp: String(thumbnailTimestamp),
+        },
         artifactSink,
+        durationSeconds: probeResult.durationSeconds,
       });
 
-      const extractResult = await this.options.extractAudioService.extractForWorkflow({
-        filePath: input.filePath,
-        filename: input.filename,
+      const extractResult = await this.executeImportNode({
         workflowId,
-        jobId,
         nodeId: MEDIA_IMPORT_NODE_IDS.EXTRACT_AUDIO,
-        artifactRoot: input.artifactRoot,
+        nodeKind: NODE_KINDS.EXTRACT_AUDIO,
+        input,
+        artifacts: importArtifacts,
         artifactSink,
-        onProgress: () => undefined,
+        durationSeconds: probeResult.durationSeconds,
       });
 
       const thumbnailPath = thumbnailResult.artifacts.thumbnail;
@@ -174,6 +196,7 @@ export class ImportMediaService {
       }
 
       const artifacts: ImportMediaArtifacts = {
+        validate: `${input.artifactRoot}/${MEDIA_ARTIFACT_FILENAMES.VALIDATE}`,
         fingerprint: fingerprintArtifact,
         metadata: metadataArtifactPath,
         thumbnail: thumbnailPath,
@@ -192,7 +215,7 @@ export class ImportMediaService {
       publishMediaImportCompleted({
         eventBus: this.options.eventBus,
         workflowId,
-        jobId,
+        jobId: IMPORT_JOB_ID,
         mediaFileId: mediaFile.id,
         contentHash,
         artifactPaths: {
@@ -233,5 +256,36 @@ export class ImportMediaService {
 
   async probeImportedFile(input: ImportMediaInput): Promise<ImportMediaResult> {
     return this.importVideoFile(input);
+  }
+
+  private executeImportNode(input: {
+    readonly workflowId: string;
+    readonly nodeId: string;
+    readonly nodeKind: (typeof NODE_KINDS)[keyof typeof NODE_KINDS];
+    readonly input: ImportMediaInput;
+    readonly artifacts: Readonly<Record<string, string>>;
+    readonly artifactSink?: ArtifactSink;
+    readonly durationSeconds?: number;
+  }): Promise<{
+    readonly artifacts: Readonly<Record<string, string>>;
+    readonly durationMs: number;
+  }> {
+    return this.options.nodeExecutor.execute({
+      workflowId: input.workflowId,
+      jobId: IMPORT_JOB_ID,
+      nodeId: input.nodeId,
+      nodeKind: input.nodeKind,
+      languageCode: null,
+      videoPath: input.input.filePath,
+      videoFilename: input.input.filename,
+      durationSeconds: input.durationSeconds ?? 0,
+      profile: IMPORT_PROFILE,
+      output: DEFAULT_OUTPUT_CONFIGURATION,
+      outputDirectory: input.input.artifactRoot,
+      artifactRoot: input.input.artifactRoot,
+      artifacts: input.artifacts,
+      signal: IMPORT_ABORT_SIGNAL,
+      onProgress: () => undefined,
+    });
   }
 }

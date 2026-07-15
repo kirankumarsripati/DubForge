@@ -1,4 +1,5 @@
 export const MEDIA_OPERATION_KINDS = {
+  VALIDATE: 'validate',
   FINGERPRINT: 'fingerprint',
   PROBE: 'probe',
   THUMBNAIL: 'thumbnail',
@@ -7,6 +8,7 @@ export const MEDIA_OPERATION_KINDS = {
 } as const;
 
 export const MEDIA_IMPORT_NODE_IDS = {
+  VALIDATE: 'validate',
   FINGERPRINT: 'fingerprint',
   METADATA: 'metadata',
   THUMBNAIL: 'thumbnail',

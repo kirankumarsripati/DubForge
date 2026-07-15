@@ -1,11 +1,13 @@
-import { execFile } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { promisify } from 'node:util';
+
+import {
+  BinaryProcessError,
+  formatBinaryDiagnostics,
+  runBinaryProcess,
+} from '@dubforge/platform-execution-adapters';
 
 import type { MuxMediaInput, MuxMediaPort, MuxMediaResult } from '../../ports/media-ports.js';
-
-const execFileAsync = promisify(execFile);
 
 export interface FfmpegMuxAdapterOptions {
   readonly ffmpegPath: string;
@@ -35,7 +37,21 @@ export class FfmpegMuxAdapter implements MuxMediaPort {
       input.outputPath,
     ];
 
-    await this.runFfmpeg(args, input.onProgress);
+    try {
+      input.onProgress(0);
+      await runBinaryProcess({
+        executablePath: this.options.ffmpegPath,
+        args,
+      });
+      input.onProgress(100);
+    } catch (error) {
+      if (error instanceof BinaryProcessError) {
+        throw new Error(formatBinaryDiagnostics(error.diagnostics));
+      }
+
+      throw error;
+    }
+
     const durationMs = Date.now() - startedAt;
     const artifactPath = `${input.artifactRoot}/${input.nodeId}-mux.json`;
 
@@ -59,25 +75,5 @@ export class FfmpegMuxAdapter implements MuxMediaPort {
       null,
       2,
     );
-  }
-
-  private async runFfmpeg(
-    args: readonly string[],
-    onProgress: (progress: number) => void,
-  ): Promise<void> {
-    onProgress(0);
-
-    try {
-      await execFileAsync(this.options.ffmpegPath, [...args], {
-        maxBuffer: 10 * 1024 * 1024,
-      });
-      onProgress(100);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(error.message || 'ffmpeg failed to mux media.');
-      }
-
-      throw new Error('ffmpeg failed to mux media.');
-    }
   }
 }

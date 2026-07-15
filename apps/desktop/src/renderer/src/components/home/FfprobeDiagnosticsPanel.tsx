@@ -47,6 +47,20 @@ export function FfprobeDiagnosticsPanel({
           <dd className="mt-1">{formatExitCode(activeDiagnostics.exitCode)}</dd>
         </div>
         <div>
+          <dt className="text-muted-foreground">Working directory</dt>
+          <dd className="mt-1 break-all">{activeDiagnostics.workingDirectory}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Duration</dt>
+          <dd className="mt-1">{String(activeDiagnostics.durationMs)} ms</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">stdout</dt>
+          <dd className="mt-1 whitespace-pre-wrap break-all">
+            {activeDiagnostics.stdout.length > 0 ? activeDiagnostics.stdout : '(empty)'}
+          </dd>
+        </div>
+        <div>
           <dt className="text-muted-foreground">stderr</dt>
           <dd className="mt-1 whitespace-pre-wrap break-all">
             {activeDiagnostics.stderr.length > 0 ? activeDiagnostics.stderr : '(empty)'}

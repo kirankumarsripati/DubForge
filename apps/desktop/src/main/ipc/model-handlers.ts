@@ -44,7 +44,7 @@ export function registerModelIpcHandlers(container: ServiceContainer): void {
     return verifyModelResponseSchema.parse(result);
   });
 
-  ipcMain.handle(MODEL_IPC_CHANNELS.GET_DIAGNOSTICS, async (_event, payload: unknown) => {
+  ipcMain.handle(MODEL_IPC_CHANNELS.GET_DIAGNOSTICS, (_event, payload: unknown) => {
     const request = modelIdRequestSchema.parse(payload);
     return assetDiagnosticsResponseSchema.parse(modelService.getDiagnostics(request.id));
   });

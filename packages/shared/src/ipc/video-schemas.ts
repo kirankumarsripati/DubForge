@@ -34,7 +34,10 @@ export const ffprobeDiagnosticsSchema = z.object({
   args: z.array(z.string()),
   command: z.string().min(1),
   exitCode: z.number().int().nullable(),
+  stdout: z.string(),
   stderr: z.string(),
+  workingDirectory: z.string().min(1),
+  durationMs: z.number().nonnegative(),
 });
 
 export const ffprobeDiagnosticRecordSchema = z.object({

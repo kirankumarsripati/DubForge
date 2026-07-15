@@ -23,6 +23,7 @@ const stageProviders = {
   [NODE_KINDS.VALIDATE]: createFakeValidateProvider(),
   [NODE_KINDS.FINGERPRINT]: createFakeFingerprintProvider(),
   [NODE_KINDS.METADATA]: createFakeMetadataProvider(),
+  [NODE_KINDS.THUMBNAIL]: createFakeMetadataProvider(),
   [NODE_KINDS.EXTRACT_AUDIO]: createFakeExtractAudioProvider(),
   [NODE_KINDS.SPEECH_RECOGNITION]: createFakeSpeechRecognitionProvider(),
   [NODE_KINDS.ENGLISH_TRANSCRIPT]: createFakeEnglishTranscriptProvider(),

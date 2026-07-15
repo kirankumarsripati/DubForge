@@ -1,4 +1,4 @@
-export const SUPPORTED_VIDEO_EXTENSIONS = ['.mp4', '.mkv'] as const;
+export const SUPPORTED_VIDEO_EXTENSIONS = ['.mp4', '.mkv', '.mov'] as const;
 
 export const SUPPORTED_VIDEO_CONTAINERS = ['mov', 'mp4', 'matroska', 'webm'] as const;
 

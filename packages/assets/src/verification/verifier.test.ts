@@ -71,9 +71,11 @@ describe('AssetVerifier', () => {
 
     const verifier = new AssetVerifier(repository);
     const asset = repository.getAssetById('whisper-medium');
-    expect(asset).not.toBeNull();
+    if (asset === null) {
+      throw new Error('Expected whisper-medium asset.');
+    }
 
-    const result = await verifier.verifyRecord(asset!);
+    const result = await verifier.verifyRecord(asset);
     expect(result.valid).toBe(true);
     expect(result.actualChecksum).toBe(checksum);
   });
@@ -95,9 +97,11 @@ describe('AssetVerifier', () => {
 
     const verifier = new AssetVerifier(repository);
     const asset = repository.getAssetById('missing-file');
-    expect(asset).not.toBeNull();
+    if (asset === null) {
+      throw new Error('Expected missing-file asset.');
+    }
 
-    const result = await verifier.verifyRecord(asset!);
+    const result = await verifier.verifyRecord(asset);
     expect(result.valid).toBe(false);
     expect(result.reason).toContain('missing');
   });

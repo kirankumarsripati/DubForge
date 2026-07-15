@@ -75,7 +75,10 @@ describe('Asset diagnostics integration', () => {
     await service.downloadAsset('missing-binary');
     const installation = service.getInstallation('missing-binary');
     expect(installation?.filePath).not.toBeNull();
-    await rm(installation!.filePath!, { force: true });
+    if (installation?.filePath === undefined) {
+      throw new Error('Expected installation file path for missing-binary.');
+    }
+    await rm(installation.filePath, { force: true });
 
     const verificationReport = await service.verifyAsset('missing-binary');
     expect(verificationReport.valid).toBe(false);

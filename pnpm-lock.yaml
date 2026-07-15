@@ -393,6 +393,9 @@ importers:
       '@dubforge/job-config':
         specifier: workspace:*
         version: link:../job-config
+      '@dubforge/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@dubforge/types':
         specifier: workspace:*
         version: link:../types

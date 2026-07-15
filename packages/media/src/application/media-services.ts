@@ -13,6 +13,7 @@ import {
   ProcessExecutionError,
   formatProcessDiagnostics,
 } from '../adapters/subprocess/process-execution.js';
+import { MEDIA_ARTIFACT_FILENAMES } from '../domain/artifact-names.js';
 import { MEDIA_OPERATION_KINDS } from '../domain/constants.js';
 import type { ProbeMediaPort } from '../ports/media-ports.js';
 import type {
@@ -293,7 +294,7 @@ export class ExtractAudioService {
     });
 
     try {
-      const outputPath = `${input.artifactRoot}/${input.nodeId}-audio.wav`;
+      const outputPath = `${input.artifactRoot}/${MEDIA_ARTIFACT_FILENAMES.AUDIO}`;
       const extractInput = {
         filePath: input.filePath,
         filename: input.filename,

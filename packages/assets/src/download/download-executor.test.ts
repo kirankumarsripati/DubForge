@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AssetDatabase } from '../database/connection.js';
 import { DiagnosticsRepository } from '../diagnostics/diagnostics-repository.js';
 import { runMigrations } from '../migrations/runner.js';
+import { DOWNLOAD_STATUSES } from '../types.js';
 import {
   atomicRenameVerifiedFile,
   downloadFromManifestSources,
@@ -18,10 +19,56 @@ import { DOWNLOAD_SOURCE_TYPES } from '../download/source-types.js';
 describe('Download executor diagnostics', () => {
   let tempDir: string;
   let diagnosticsRepository: DiagnosticsRepository;
+  let database: AssetDatabase;
+
+  function seedDownloadContext(input: {
+    readonly assetId: string;
+    readonly downloadId: string;
+    readonly targetPath: string;
+  }): void {
+    const now = new Date().toISOString();
+    database.raw
+      .prepare(
+        `INSERT INTO assets (
+          id, name, kind, category, version, status, created_at, updated_at
+        ) VALUES (
+          @id, @name, @kind, @category, @version, @status, @createdAt, @updatedAt
+        )`,
+      )
+      .run({
+        id: input.assetId,
+        name: 'Test Asset',
+        kind: 'model',
+        category: 'speech-to-text',
+        version: '1.0.0',
+        status: 'not_installed',
+        createdAt: now,
+        updatedAt: now,
+      });
+
+    database.raw
+      .prepare(
+        `INSERT INTO downloads (
+          id, asset_id, target_version, target_path, temp_path, bytes_downloaded, status, started_at, updated_at
+        ) VALUES (
+          @id, @assetId, @version, @targetPath, @tempPath, 0, @status, @startedAt, @updatedAt
+        )`,
+      )
+      .run({
+        id: input.downloadId,
+        assetId: input.assetId,
+        version: '1.0.0',
+        targetPath: input.targetPath,
+        tempPath: `${input.targetPath}.part`,
+        status: DOWNLOAD_STATUSES.DOWNLOADING,
+        startedAt: now,
+        updatedAt: now,
+      });
+  }
 
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'dubforge-download-'));
-    const database = new AssetDatabase();
+    database = new AssetDatabase();
     runMigrations(database.raw);
     diagnosticsRepository = new DiagnosticsRepository(database.raw);
   });
@@ -37,6 +84,11 @@ describe('Download executor diagnostics', () => {
     const tempPath = join(tempDir, 'target.part');
     const finalPath = join(tempDir, 'target.bin');
     const downloadId = randomUUID();
+    seedDownloadContext({
+      assetId: 'test-asset',
+      downloadId,
+      targetPath: finalPath,
+    });
 
     await writeFile(sourcePath, content);
 
@@ -84,6 +136,13 @@ describe('Download executor diagnostics', () => {
     const expectedChecksum = createHash('sha256').update('different').digest('hex');
     const actualChecksum = createHash('sha256').update(content).digest('hex');
 
+    const downloadId = randomUUID();
+    seedDownloadContext({
+      assetId: 'test-asset',
+      downloadId,
+      targetPath: join(tempDir, 'target.bin'),
+    });
+
     await writeFile(sourcePath, content);
 
     const registry = createDefaultDownloadProviderRegistry();
@@ -100,7 +159,7 @@ describe('Download executor diagnostics', () => {
         tempPath,
         assetId: 'test-asset',
         version: '1.0.0',
-        downloadId: randomUUID(),
+        downloadId,
         expectedSizeBytes: content.length,
         diagnosticsRepository,
         signal: controller.signal,

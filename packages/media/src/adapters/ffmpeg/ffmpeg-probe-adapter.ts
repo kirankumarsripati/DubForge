@@ -1,12 +1,16 @@
 import { randomUUID } from 'node:crypto';
 
+import { ffprobeOutputSchema } from '@dubforge/shared';
+import { parseFfprobeOutput } from '@dubforge/shared';
 import {
   FfprobeExecutionError,
   FfprobeParseError,
+  buildFfprobeArgs,
   type FfprobeDiagnostics,
 } from '@dubforge/shared';
-import { probeVideoFile } from '@dubforge/shared/node/ffprobe';
+import { BinaryProcessError, runBinaryProcess } from '@dubforge/platform-execution-adapters';
 
+import { MEDIA_ARTIFACT_FILENAMES } from '../../domain/artifact-names.js';
 import { normalizeCodecName } from '../../domain/value-objects/codec.js';
 import { primaryContainerFormat } from '../../domain/value-objects/container-format.js';
 import { createDuration } from '../../domain/value-objects/duration.js';
@@ -18,32 +22,57 @@ export interface FfmpegProbeAdapterOptions {
   readonly ffprobePath: string;
 }
 
+function toFfprobeDiagnostics(diagnostics: {
+  readonly executablePath: string;
+  readonly args: readonly string[];
+  readonly command: string;
+  readonly exitCode: number | null;
+  readonly stdout: string;
+  readonly stderr: string;
+  readonly workingDirectory: string;
+  readonly durationMs: number;
+}): FfprobeDiagnostics {
+  return diagnostics;
+}
+
 export class FfmpegProbeAdapter implements ProbeMediaPort {
   constructor(private readonly options: FfmpegProbeAdapterOptions) {}
 
   async probe(input: ProbeMediaInput): Promise<ProbeMediaResult> {
     const startedAt = Date.now();
+    const args = buildFfprobeArgs(input.filePath);
+
     let probeResult;
     let diagnostics: FfprobeDiagnostics;
 
     try {
-      const result = await probeVideoFile(this.options.ffprobePath, input.filePath);
-      probeResult = result.probe;
-      diagnostics = result.diagnostics;
+      const result = await runBinaryProcess({
+        executablePath: this.options.ffprobePath,
+        args,
+      });
+      diagnostics = toFfprobeDiagnostics(result.diagnostics);
+
+      try {
+        const parsed = ffprobeOutputSchema.parse(JSON.parse(result.stdout));
+        probeResult = parseFfprobeOutput(parsed);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to parse ffprobe output.';
+        throw new FfprobeParseError(message);
+      }
     } catch (error) {
-      if (error instanceof FfprobeExecutionError) {
+      if (error instanceof FfprobeParseError) {
         throw error;
       }
 
-      if (error instanceof FfprobeParseError) {
-        throw error;
+      if (error instanceof BinaryProcessError) {
+        throw new FfprobeExecutionError(error.message, toFfprobeDiagnostics(error.diagnostics));
       }
 
       throw error;
     }
 
     const durationMs = Date.now() - startedAt;
-    const artifactPath = `${input.artifactRoot}/${input.nodeId}-metadata.json`;
+    const artifactPath = `${input.artifactRoot}/${MEDIA_ARTIFACT_FILENAMES.METADATA}`;
     const probeJson = JSON.stringify(
       {
         adapter: 'ffmpeg-probe',

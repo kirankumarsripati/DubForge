@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 
+import { MEDIA_ARTIFACT_FILENAMES } from '../../domain/artifact-names.js';
 import type {
   FingerprintMediaInput,
   FingerprintMediaPort,
@@ -12,7 +13,7 @@ export class Sha256FingerprintAdapter implements FingerprintMediaPort {
     const startedAt = Date.now();
     const contentHash = await this.computeSha256(input.filePath);
     const durationMs = Date.now() - startedAt;
-    const artifactPath = `${input.artifactRoot}/${input.nodeId}-fingerprint.json`;
+    const artifactPath = `${input.artifactRoot}/${MEDIA_ARTIFACT_FILENAMES.FINGERPRINT}`;
     const fingerprintJson = JSON.stringify(
       {
         adapter: 'sha256-fingerprint',

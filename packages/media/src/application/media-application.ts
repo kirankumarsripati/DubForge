@@ -6,6 +6,7 @@ import { NODE_KINDS, type NodeKind } from '@dubforge/types';
 
 import { ExtractAudioService, MuxMediaService, ProbeMediaService } from './media-services.js';
 import { FingerprintMediaService } from './fingerprint-media-service.js';
+import { ValidateMediaService } from './validate-media-service.js';
 
 function parseImportArtifactNumber(
   artifacts: Readonly<Record<string, string>>,
@@ -21,6 +22,7 @@ function parseImportArtifactNumber(
 }
 
 const MEDIA_NODE_KINDS = new Set<NodeKind>([
+  NODE_KINDS.VALIDATE,
   NODE_KINDS.FINGERPRINT,
   NODE_KINDS.METADATA,
   NODE_KINDS.EXTRACT_AUDIO,
@@ -29,6 +31,7 @@ const MEDIA_NODE_KINDS = new Set<NodeKind>([
 
 export class MediaApplication {
   constructor(
+    private readonly validateService: ValidateMediaService,
     private readonly fingerprintService: FingerprintMediaService,
     private readonly probeService: ProbeMediaService,
     private readonly extractService: ExtractAudioService,
@@ -41,6 +44,19 @@ export class MediaApplication {
 
   async executeNode(request: ExecutionAdapterRequest): Promise<ExecutionAdapterResult> {
     switch (request.nodeKind) {
+      case NODE_KINDS.VALIDATE:
+        return this.validateService.validateForWorkflow({
+          filePath: request.videoPath,
+          filename: request.videoFilename,
+          workflowId: request.workflowId,
+          jobId: request.jobId,
+          nodeId: request.nodeId,
+          artifactRoot: request.artifactRoot,
+          artifactSink: request.artifactSink,
+          fileSizeBytes: parseImportArtifactNumber(request.artifacts, '__import_file_size') ?? 0,
+          fileModifiedAtMs:
+            parseImportArtifactNumber(request.artifacts, '__import_file_modified') ?? 0,
+        });
       case NODE_KINDS.FINGERPRINT:
         return this.fingerprintService.fingerprintForWorkflow({
           filePath: request.videoPath,

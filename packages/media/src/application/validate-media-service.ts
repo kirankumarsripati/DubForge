@@ -1,49 +1,51 @@
+import { access } from 'node:fs/promises';
+
 import type { ArtifactSink } from '@dubforge/platform-execution-adapters';
 import type { DomainEventBus } from '@dubforge/platform-events';
+import {
+  validateVideoExtension,
+  validateVideoFileStats,
+  type VideoValidationFailure,
+} from '@dubforge/shared';
+import { NODE_KINDS } from '@dubforge/types';
 
 import { MEDIA_ARTIFACT_FILENAMES } from '../domain/artifact-names.js';
-import {
-  ProcessExecutionError,
-  formatProcessDiagnostics,
-} from '../adapters/subprocess/process-execution.js';
 import { MEDIA_OPERATION_KINDS } from '../domain/constants.js';
-import type { ThumbnailMediaPort } from '../ports/media-ports.js';
-import { MediaRepository } from '../repository/media-repository.js';
+import type { MediaRepository } from '../repository/media-repository.js';
 import {
   publishMediaDiagnostic,
   publishMediaOperationCompleted,
   publishMediaOperationFailed,
   publishMediaOperationStarted,
-  publishMediaThumbnailGenerated,
 } from './media-event-publisher.js';
 
-export interface ThumbnailMediaServiceOptions {
+export interface ValidateMediaServiceOptions {
   readonly eventBus: DomainEventBus;
   readonly repository: MediaRepository;
-  readonly thumbnailPort: ThumbnailMediaPort;
   readonly artifactSink?: ArtifactSink;
 }
 
-export class ThumbnailMediaService {
-  constructor(private readonly options: ThumbnailMediaServiceOptions) {}
+export class ValidateMediaService {
+  constructor(private readonly options: ValidateMediaServiceOptions) {}
 
-  async generateForWorkflow(input: {
+  async validateForWorkflow(input: {
     readonly filePath: string;
     readonly filename: string;
     readonly workflowId: string;
     readonly jobId: string;
     readonly nodeId: string;
     readonly artifactRoot: string;
-    readonly timestampSeconds: number;
+    readonly fileSizeBytes: number;
+    readonly fileModifiedAtMs: number;
     readonly artifactSink?: ArtifactSink;
   }): Promise<{
     readonly artifacts: Readonly<Record<string, string>>;
     readonly durationMs: number;
   }> {
-    const mediaFile = this.options.repository.findMediaFileByWorkflow(input.workflowId);
+    const startedAt = Date.now();
     const operation = this.options.repository.startOperation({
-      kind: MEDIA_OPERATION_KINDS.THUMBNAIL,
-      mediaFileId: mediaFile?.id ?? null,
+      kind: MEDIA_OPERATION_KINDS.VALIDATE,
+      mediaFileId: null,
       workflowId: input.workflowId,
       jobId: input.jobId,
       nodeId: input.nodeId,
@@ -57,56 +59,50 @@ export class ThumbnailMediaService {
       operation,
     });
 
-    const outputPath = `${input.artifactRoot}/${MEDIA_ARTIFACT_FILENAMES.THUMBNAIL}`;
-
     try {
-      const result = await this.options.thumbnailPort.generate({
+      await access(input.filePath);
+
+      const statsFailure = validateVideoFileStats({
         filePath: input.filePath,
         filename: input.filename,
-        workflowId: input.workflowId,
-        jobId: input.jobId,
-        nodeId: input.nodeId,
-        artifactRoot: input.artifactRoot,
-        outputPath,
-        timestampSeconds: input.timestampSeconds,
+        fileSizeBytes: input.fileSizeBytes,
+        fileModifiedAtMs: input.fileModifiedAtMs,
       });
+      if (statsFailure !== null) {
+        throw new ValidationStageError(statsFailure);
+      }
 
+      const extensionFailure = validateVideoExtension(input.filename);
+      if (extensionFailure !== null) {
+        throw new ValidationStageError(extensionFailure);
+      }
+
+      const artifactPath = `${input.artifactRoot}/${MEDIA_ARTIFACT_FILENAMES.VALIDATE}`;
+      const durationMs = Date.now() - startedAt;
       const artifactContent = JSON.stringify(
         {
-          adapter: 'ffmpeg-thumbnail',
-          sourcePath: input.filePath,
-          thumbnailPath: result.thumbnailPath,
-          timestampSeconds: input.timestampSeconds,
-          diagnostics: result.diagnostics,
+          adapter: 'validate-input',
+          filePath: input.filePath,
+          filename: input.filename,
+          fileSizeBytes: input.fileSizeBytes,
+          fileModifiedAtMs: input.fileModifiedAtMs,
+          validatedAt: new Date().toISOString(),
+          durationMs,
         },
         null,
         2,
       );
+
       const sink = input.artifactSink ?? this.options.artifactSink;
       if (sink !== undefined) {
-        await sink.writeText(result.artifactPath, artifactContent);
-      }
-
-      if (mediaFile !== null) {
-        this.options.repository.updateMediaFileArtifacts(mediaFile.id, {
-          thumbnailArtifactPath: result.thumbnailPath,
-        });
+        await sink.writeText(artifactPath, artifactContent);
       }
 
       const completed = this.options.repository.completeOperation(
         operation.id,
-        result.artifactPath,
-        result.durationMs,
+        artifactPath,
+        durationMs,
       );
-
-      publishMediaThumbnailGenerated({
-        eventBus: this.options.eventBus,
-        workflowId: input.workflowId,
-        jobId: input.jobId,
-        nodeId: input.nodeId,
-        artifactPath: result.artifactPath,
-        thumbnailPath: result.thumbnailPath,
-      });
 
       publishMediaOperationCompleted({
         eventBus: this.options.eventBus,
@@ -114,18 +110,15 @@ export class ThumbnailMediaService {
         jobId: input.jobId,
         nodeId: input.nodeId,
         operation: completed,
-        artifactPath: result.artifactPath,
+        artifactPath,
       });
 
       return {
-        artifacts: {
-          thumbnail: result.thumbnailPath,
-          'thumbnail-manifest': result.artifactPath,
-        },
-        durationMs: result.durationMs,
+        artifacts: { validate: artifactPath },
+        durationMs,
       };
     } catch (error) {
-      const message = this.formatFailureMessage(error);
+      const message = formatValidationFailure(error);
       const failed = this.options.repository.failOperation(operation.id, message);
       publishMediaDiagnostic({
         eventBus: this.options.eventBus,
@@ -147,11 +140,26 @@ export class ThumbnailMediaService {
     }
   }
 
-  private formatFailureMessage(error: unknown): string {
-    if (error instanceof ProcessExecutionError) {
-      return formatProcessDiagnostics(error.diagnostics);
-    }
-
-    return error instanceof Error ? error.message : 'Thumbnail generation failed.';
+  canHandleNodeKind(nodeKind: string): boolean {
+    return nodeKind === NODE_KINDS.VALIDATE;
   }
+}
+
+class ValidationStageError extends Error {
+  constructor(readonly failure: VideoValidationFailure) {
+    super(`${failure.title}: ${failure.description}`);
+    this.name = 'ValidationStageError';
+  }
+}
+
+function formatValidationFailure(error: unknown): string {
+  if (error instanceof ValidationStageError) {
+    return `${error.failure.title}\n${error.failure.description}\nRecovery: ${error.failure.recoveryAction}`;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Input validation failed.';
 }

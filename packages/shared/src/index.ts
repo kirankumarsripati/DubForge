@@ -67,6 +67,7 @@ export {
   calculateThumbnailTimestampSeconds,
   createValidationFailure,
   createFfprobeValidationFailure,
+  buildFfprobeArgs,
   ffprobeOutputSchema,
   FfprobeExecutionError,
   FfprobeParseError,

@@ -39,8 +39,8 @@ const VALIDATION_MESSAGES: Record<
   },
   'unsupported-extension': {
     title: 'Unsupported file type',
-    description: 'Only MP4 and MKV files are supported in this version.',
-    recoveryAction: 'Convert the file to MP4 or MKV, then try again.',
+    description: 'Only MP4, MKV, and MOV files are supported in this version.',
+    recoveryAction: 'Convert the file to MP4, MKV, or MOV, then try again.',
   },
   'unsupported-container': {
     title: 'Unsupported container',
@@ -154,6 +154,10 @@ export function validateVideoProbe(probe: VideoProbeResult): VideoValidationFail
 
   if (probe.durationSeconds > MAX_VIDEO_DURATION_SECONDS) {
     return createValidationFailure('duration-too-long');
+  }
+
+  if (probe.videoStream.width <= 0 || probe.videoStream.height <= 0) {
+    return createValidationFailure('missing-video-stream');
   }
 
   if (probe.audioTrackCount <= 0) {

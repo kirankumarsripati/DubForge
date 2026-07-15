@@ -2,6 +2,7 @@ export const NODE_KINDS = {
   VALIDATE: 'validate',
   FINGERPRINT: 'fingerprint',
   METADATA: 'metadata',
+  THUMBNAIL: 'thumbnail',
   EXTRACT_AUDIO: 'extract-audio',
   SPEECH_RECOGNITION: 'speech-recognition',
   ENGLISH_TRANSCRIPT: 'english-transcript',
@@ -195,14 +196,6 @@ export interface RecentVideoFile {
   readonly thumbnailUrl: string | null;
 }
 
-export interface FfprobeDiagnostics {
-  readonly executablePath: string;
-  readonly args: readonly string[];
-  readonly command: string;
-  readonly exitCode: number | null;
-  readonly stderr: string;
-}
-
 export interface VideoImportError {
   readonly title: string;
   readonly description: string;
@@ -304,5 +297,8 @@ export interface FfprobeDiagnostics {
   readonly args: readonly string[];
   readonly command: string;
   readonly exitCode: number | null;
+  readonly stdout: string;
   readonly stderr: string;
+  readonly workingDirectory: string;
+  readonly durationMs: number;
 }

@@ -5,6 +5,7 @@ import type { LocalizationExecutionAdapter } from '@dubforge/localization';
 import {
   ExecutionAdapterRegistry,
   MockExecutionAdapter,
+  NativeBinaryExecutionAdapter,
   NodeExecutionAdapter,
   PythonExecutionAdapter,
 } from '@dubforge/platform-execution-adapters';
@@ -21,6 +22,8 @@ export function createPlatformAdapterRegistry(input: {
   readonly voicePerformanceExecutionAdapter: VoicePerformanceExecutionAdapter;
   readonly temporalExecutionAdapter: TemporalExecutionAdapter;
   readonly deliveryExecutionAdapter: DeliveryExecutionAdapter;
+  readonly ffmpegPath?: string;
+  readonly ffprobePath?: string;
 }): ExecutionAdapterRegistry {
   return new ExecutionAdapterRegistry([
     input.mediaExecutionAdapter,
@@ -29,6 +32,10 @@ export function createPlatformAdapterRegistry(input: {
     input.voicePerformanceExecutionAdapter,
     input.temporalExecutionAdapter,
     input.deliveryExecutionAdapter,
+    new NativeBinaryExecutionAdapter({
+      ffmpegPath: input.ffmpegPath,
+      ffprobePath: input.ffprobePath,
+    }),
     new NodeExecutionAdapter(),
     new PythonExecutionAdapter(),
     new MockExecutionAdapter(),

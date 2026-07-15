@@ -9,7 +9,7 @@ import type { AssetPlatform, ModelView } from '@dubforge/assets';
 type ModelChangeListener = () => void;
 
 function toModel(view: ModelView): Model {
-  return modelResponseSchema.parse(view) as Model;
+  return modelResponseSchema.parse(view);
 }
 
 export class DesktopModelService {
@@ -74,7 +74,7 @@ export class DesktopModelService {
     return verifyModelResponseSchema.parse({
       model,
       verificationReport,
-    }) as VerifyModelResult;
+    });
   }
 
   getDiagnostics(id: string): AssetDiagnostics {
@@ -82,9 +82,7 @@ export class DesktopModelService {
       throw new Error(`Model not found in registry: ${id}`);
     }
 
-    return assetDiagnosticsResponseSchema.parse(
-      this.assetPlatform.service.getDiagnostics(id),
-    ) as AssetDiagnostics;
+    return assetDiagnosticsResponseSchema.parse(this.assetPlatform.service.getDiagnostics(id));
   }
 
   async repairModel(id: string): Promise<Model> {
