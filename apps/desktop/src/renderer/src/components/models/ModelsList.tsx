@@ -1,4 +1,4 @@
-import type { Model, ModelCategory, ModelStatus } from '@dubforge/types';
+import type { Model, ModelCategory, ModelHealthStatus, ModelStatus } from '@dubforge/types';
 import { Badge, Button, Progress } from '@dubforge/ui';
 import { formatBytes } from '../../lib/format';
 
@@ -24,18 +24,29 @@ function categoryLabel(category: ModelCategory): string {
 
 function statusLabel(status: ModelStatus): string {
   switch (status) {
+    case 'not-installed':
+      return 'Not Installed';
     case 'installed':
       return 'Installed';
     case 'downloading':
       return 'Downloading';
     case 'verifying':
       return 'Verifying';
-    case 'missing':
-      return 'Missing';
     case 'corrupted':
       return 'Corrupted';
     case 'update-available':
       return 'Update Available';
+  }
+}
+
+function healthLabel(health: ModelHealthStatus): string {
+  switch (health) {
+    case 'healthy':
+      return 'Healthy';
+    case 'degraded':
+      return 'Degraded';
+    case 'unhealthy':
+      return 'Unhealthy';
   }
 }
 
@@ -48,10 +59,23 @@ function statusVariant(
     case 'downloading':
     case 'verifying':
       return 'default';
-    case 'missing':
+    case 'not-installed':
     case 'update-available':
       return 'warning';
     case 'corrupted':
+      return 'destructive';
+  }
+}
+
+function healthVariant(
+  health: ModelHealthStatus,
+): 'default' | 'secondary' | 'success' | 'warning' | 'destructive' | 'outline' {
+  switch (health) {
+    case 'healthy':
+      return 'success';
+    case 'degraded':
+      return 'warning';
+    case 'unhealthy':
       return 'destructive';
   }
 }
@@ -65,7 +89,7 @@ export function ModelsList({
   onRepair,
 }: ModelsListProps): React.JSX.Element {
   const totalSize = models
-    .filter((model) => model.status === 'installed')
+    .filter((model) => model.status === 'installed' || model.status === 'update-available')
     .reduce((sum, model) => sum + model.sizeBytes, 0);
 
   return (
@@ -84,6 +108,9 @@ export function ModelsList({
                 <h3 className="font-medium">{model.name}</h3>
                 <Badge variant="outline">{categoryLabel(model.category)}</Badge>
                 <Badge variant={statusVariant(model.status)}>{statusLabel(model.status)}</Badge>
+                {model.health !== null ? (
+                  <Badge variant={healthVariant(model.health)}>{healthLabel(model.health)}</Badge>
+                ) : null}
               </div>
               <p className="text-muted-foreground mt-1 text-sm">
                 v{model.version}
@@ -94,6 +121,11 @@ export function ModelsList({
               {model.checksum !== null ? (
                 <p className="text-muted-foreground mt-1 truncate font-mono text-xs">
                   SHA-256: {model.checksum}
+                </p>
+              ) : null}
+              {model.installLocation !== null ? (
+                <p className="text-muted-foreground mt-1 truncate font-mono text-xs">
+                  Install location: {model.installLocation}
                 </p>
               ) : null}
               {model.requiredBy.length > 0 ? (
@@ -112,7 +144,7 @@ export function ModelsList({
               ) : null}
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
-              {model.status === 'missing' ? (
+              {model.status === 'not-installed' ? (
                 <Button
                   size="sm"
                   onClick={() => {
@@ -153,7 +185,7 @@ export function ModelsList({
                   Verify
                 </Button>
               ) : null}
-              {model.status !== 'missing' &&
+              {model.status !== 'not-installed' &&
               model.status !== 'downloading' &&
               model.status !== 'verifying' ? (
                 <Button

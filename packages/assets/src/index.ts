@@ -63,7 +63,21 @@ export { AssetResolver } from './resolver/asset-resolver.js';
 export type { ResolveByIdOptions, ResolveByKindOptions } from './resolver/asset-resolver.js';
 
 export { DependencyTracker } from './dependencies/dependency-tracker.js';
-export type { DependencyResolution } from './dependencies/dependency-tracker.js';
+
+export { AssetManifestRegistry, toRegisteredAsset } from './registry/asset-manifest-registry.js';
+export type { RegisteredAsset, AssetRegistrySnapshot } from './registry/asset-manifest-registry.js';
+export { RegistryLoader } from './registry/registry-loader.js';
+export type { RegistryLoaderOptions } from './registry/registry-loader.js';
+export {
+  REGISTRY_INDEX_FILENAME,
+  registeredAssetManifestSchema,
+  registryIndexSchema,
+} from './registry/registry-schema.js';
+export type {
+  RegisteredAssetManifest,
+  RegistryDependency,
+  RegistryIndex,
+} from './registry/registry-schema.js';
 
 export { AssetHealthService } from './health/asset-health.js';
 
@@ -71,10 +85,8 @@ export { VersionManager } from './version/version-manager.js';
 export type { VersionRange } from './version/version-manager.js';
 export { compare, parseVersion, satisfies } from './version/semver.js';
 
-export { DEFAULT_ASSET_CATALOG, DEFAULT_ASSET_DEPENDENCIES } from './catalog/default-catalog.js';
-
 export { AssetService, createAssetService } from './service/asset-service.js';
-export type { AssetServiceOptions } from './service/asset-service.js';
+export type { AssetServiceOptions, DependencyResolution } from './service/asset-service.js';
 
 export {
   createAssetPlatform,
@@ -96,4 +108,5 @@ export {
   type ModelView,
   type ModelStatus,
   type ModelCategory,
+  type ModelHealthStatus,
 } from './presentation/model-view.js';

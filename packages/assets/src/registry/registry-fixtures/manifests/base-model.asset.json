@@ -1,0 +1,17 @@
+{
+  "id": "base-model",
+  "name": "Base Model",
+  "kind": "model",
+  "category": "speech-to-text",
+  "version": "1.0.0",
+  "latestVersion": "1.0.0",
+  "estimatedSizeBytes": 1024,
+  "requiredBy": [],
+  "sources": [
+    {
+      "type": "local-file",
+      "url": "file://placeholder"
+    }
+  ],
+  "filename": "asset.bin"
+}

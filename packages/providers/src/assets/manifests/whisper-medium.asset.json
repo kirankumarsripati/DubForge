@@ -1,0 +1,17 @@
+{
+  "id": "whisper-medium",
+  "name": "Whisper Medium",
+  "kind": "model",
+  "category": "speech-to-text",
+  "version": "1.0.0",
+  "latestVersion": "1.0.0",
+  "estimatedSizeBytes": 1530000000,
+  "requiredBy": ["Speech Recognition", "Fast Profile"],
+  "sources": [
+    {
+      "type": "huggingface",
+      "url": "https://huggingface.co/openai/whisper-medium/resolve/main/pytorch_model.bin"
+    }
+  ],
+  "filename": "asset.bin"
+}

@@ -1,5 +1,4 @@
-import { EmptyState, ErrorState, PageSkeleton } from '@dubforge/ui';
-import { Layers } from 'lucide-react';
+import { ErrorState, PageSkeleton } from '@dubforge/ui';
 import { useEffect } from 'react';
 import { ModelsList } from '../components/models/ModelsList';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -20,8 +19,6 @@ export function ModelsPage(): React.JSX.Element {
     const unsubscribe = subscribeToChanges();
     return unsubscribe;
   }, [fetchModels, subscribeToChanges]);
-
-  const installedCount = models.data?.filter((model) => model.status === 'installed').length ?? 0;
 
   return (
     <div className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8">
@@ -44,43 +41,25 @@ export function ModelsPage(): React.JSX.Element {
           />
         ) : null}
 
-        {models.status === 'success' && models.data !== null && models.data.length > 0 ? (
-          <>
-            {installedCount === 0 ? (
-              <div className="mb-6">
-                <EmptyState
-                  icon={Layers}
-                  title="No models installed"
-                  description="Download the required models to enable offline video localization."
-                  actionLabel="Download Missing Models"
-                  onAction={() => {
-                    const missing = models.data?.find((model) => model.status === 'missing');
-                    if (missing) {
-                      void downloadModel(missing.id);
-                    }
-                  }}
-                />
-              </div>
-            ) : null}
-            <ModelsList
-              models={models.data}
-              onDownload={(id) => {
-                void downloadModel(id);
-              }}
-              onDelete={(id) => {
-                void deleteModel(id);
-              }}
-              onUpdate={(id) => {
-                void updateModel(id);
-              }}
-              onVerify={(id) => {
-                void verifyModel(id);
-              }}
-              onRepair={(id) => {
-                void repairModel(id);
-              }}
-            />
-          </>
+        {models.status === 'success' && models.data !== null ? (
+          <ModelsList
+            models={models.data}
+            onDownload={(id) => {
+              void downloadModel(id);
+            }}
+            onDelete={(id) => {
+              void deleteModel(id);
+            }}
+            onUpdate={(id) => {
+              void updateModel(id);
+            }}
+            onVerify={(id) => {
+              void verifyModel(id);
+            }}
+            onRepair={(id) => {
+              void repairModel(id);
+            }}
+          />
         ) : null}
       </div>
     </div>

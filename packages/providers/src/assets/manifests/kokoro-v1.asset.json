@@ -1,0 +1,17 @@
+{
+  "id": "kokoro-v1",
+  "name": "Kokoro",
+  "kind": "model",
+  "category": "speech",
+  "version": "1.0.0",
+  "latestVersion": "1.0.0",
+  "estimatedSizeBytes": 520000000,
+  "requiredBy": ["Speech Generation", "Balanced Profile", "Studio Profile"],
+  "sources": [
+    {
+      "type": "mirror",
+      "url": "https://github.com/hexgrad/kokoro/releases/download/v1.0.0/kokoro-v1.bin"
+    }
+  ],
+  "filename": "asset.bin"
+}

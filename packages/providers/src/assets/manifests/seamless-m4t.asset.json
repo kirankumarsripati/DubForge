@@ -1,0 +1,17 @@
+{
+  "id": "seamless-m4t",
+  "name": "SeamlessM4T",
+  "kind": "model",
+  "category": "translation",
+  "version": "1.0.0",
+  "latestVersion": "1.0.0",
+  "estimatedSizeBytes": 4200000000,
+  "requiredBy": ["Translation", "Fast Profile", "Balanced Profile", "Studio Profile"],
+  "sources": [
+    {
+      "type": "huggingface",
+      "url": "https://huggingface.co/facebook/seamless-m4t-large/resolve/main/model.bin"
+    }
+  ],
+  "filename": "asset.bin"
+}

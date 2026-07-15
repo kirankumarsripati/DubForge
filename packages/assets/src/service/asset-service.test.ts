@@ -63,70 +63,95 @@ describe('AssetService integration', () => {
     await cleanup();
   });
 
-  it('seeds catalog and downloads asset with verification', async () => {
+  it('lists all registry assets on a fresh installation', async () => {
     const { createAssetService } = await import('../service/asset-service.js');
-    const { ASSET_CATEGORIES, ASSET_KINDS } = await import('../types.js');
-    const { createLocalFileManifest } = await import('../test/download-fixtures.js');
-    const { manifest } = await createLocalFileManifest('whisper-base-binary', rootPath);
+    const { createLocalFileFixture, createTestAssetManifest, createTestRegistry } =
+      await import('../test/registry-fixtures.js');
+    const fixture = await createLocalFileFixture('whisper-base-binary', rootPath);
+    const registry = createTestRegistry({
+      assets: [
+        createTestAssetManifest({
+          id: 'whisper-base',
+          name: 'Whisper Base',
+          localFilePath: fixture.filePath,
+          checksum: fixture.checksum,
+        }),
+      ],
+    });
 
-    const service = await createAssetService(rootPath, { seedCatalog: false });
-    service.seedCatalog([
-      {
-        id: 'whisper-base',
-        name: 'Whisper Base',
-        kind: ASSET_KINDS.MODEL,
-        category: ASSET_CATEGORIES.SPEECH_TO_TEXT,
-        version: '1.0.0',
-        manifest,
-      },
-    ]);
+    const service = await createAssetService(rootPath, registry);
+    const models = service.listModelViews();
 
-    const download = await service.downloadAsset('whisper-base');
-    expect(download.status).toBe('completed');
-
-    const resolved = service.resolveAsset('whisper-base');
-    expect(resolved).not.toBeNull();
-    expect(resolved?.filePath).toContain('whisper-base');
-
-    const valid = await service.verifyAsset('whisper-base');
-    expect(valid).toBe(true);
-
-    const health = await service.checkHealth('whisper-base');
-    expect(health.status).toBe('healthy');
+    expect(models).toHaveLength(1);
+    expect(models[0]?.status).toBe('not-installed');
+    expect(models[0]?.installLocation).toBeNull();
+    expect(models[0]?.health).toBeNull();
 
     service.close();
   });
 
-  it('tracks required dependencies', async () => {
+  it('downloads asset with verification and exposes installation details', async () => {
     const { createAssetService } = await import('../service/asset-service.js');
-    const { ASSET_CATEGORIES, ASSET_KINDS } = await import('../types.js');
-    const { createLocalFileManifest } = await import('../test/download-fixtures.js');
-    const baseFixture = await createLocalFileManifest('base-model-binary', rootPath);
-    const extendedFixture = await createLocalFileManifest('extended-model-binary', rootPath);
+    const { createLocalFileFixture, createTestAssetManifest, createTestRegistry } =
+      await import('../test/registry-fixtures.js');
+    const fixture = await createLocalFileFixture('whisper-base-binary', rootPath);
+    const registry = createTestRegistry({
+      assets: [
+        createTestAssetManifest({
+          id: 'whisper-base',
+          name: 'Whisper Base',
+          localFilePath: fixture.filePath,
+          checksum: fixture.checksum,
+        }),
+      ],
+    });
 
-    const service = await createAssetService(rootPath, { seedCatalog: false });
-    service.seedCatalog(
-      [
-        {
+    const service = await createAssetService(rootPath, registry);
+    const download = await service.downloadAsset('whisper-base');
+    expect(download.status).toBe('completed');
+
+    const model = service.listModelViews().find((entry) => entry.id === 'whisper-base');
+    expect(model?.status).toBe('installed');
+    expect(model?.checksum).toBe(fixture.checksum);
+    expect(model?.installLocation).toContain('whisper-base');
+    expect(model?.health).toBe('healthy');
+
+    const resolved = service.resolveAsset('whisper-base');
+    expect(resolved).not.toBeNull();
+
+    const valid = await service.verifyAsset('whisper-base');
+    expect(valid).toBe(true);
+
+    service.close();
+  });
+
+  it('tracks required dependencies from the registry', async () => {
+    const { createAssetService } = await import('../service/asset-service.js');
+    const { createLocalFileFixture, createTestAssetManifest, createTestRegistry } =
+      await import('../test/registry-fixtures.js');
+    const baseFixture = await createLocalFileFixture('base-model-binary', rootPath);
+    const extendedFixture = await createLocalFileFixture('extended-model-binary', rootPath);
+    const registry = createTestRegistry({
+      assets: [
+        createTestAssetManifest({
           id: 'base-model',
           name: 'Base Model',
-          kind: ASSET_KINDS.MODEL,
-          category: ASSET_CATEGORIES.SPEECH_TO_TEXT,
-          version: '1.0.0',
-          manifest: baseFixture.manifest,
-        },
-        {
+          localFilePath: baseFixture.filePath,
+          checksum: baseFixture.checksum,
+        }),
+        createTestAssetManifest({
           id: 'extended-model',
           name: 'Extended Model',
-          kind: ASSET_KINDS.MODEL,
-          category: ASSET_CATEGORIES.SPEECH_TO_TEXT,
-          version: '1.0.0',
-          manifest: extendedFixture.manifest,
-        },
+          localFilePath: extendedFixture.filePath,
+          checksum: extendedFixture.checksum,
+        }),
       ],
-      [{ assetId: 'extended-model', dependsOnAssetId: 'base-model', optional: false }],
-    );
+      dependencies: [
+        { assetId: 'extended-model', dependsOnAssetId: 'base-model', optional: false },
+      ],
+    });
 
+    const service = await createAssetService(rootPath, registry);
     const unresolved = service.resolveDependencies('extended-model');
     expect(unresolved.satisfied).toBe(false);
 
@@ -137,30 +162,32 @@ describe('AssetService integration', () => {
     service.close();
   });
 
-  it('deletes asset binary and resets metadata', async () => {
+  it('deletes installation state and returns asset to not installed', async () => {
     const { createAssetService } = await import('../service/asset-service.js');
-    const { ASSET_CATEGORIES, ASSET_KINDS } = await import('../types.js');
-    const { createLocalFileManifest } = await import('../test/download-fixtures.js');
-    const { manifest } = await createLocalFileManifest('piper-en-binary', rootPath);
+    const { createLocalFileFixture, createTestAssetManifest, createTestRegistry } =
+      await import('../test/registry-fixtures.js');
+    const fixture = await createLocalFileFixture('piper-en-binary', rootPath);
+    const registry = createTestRegistry({
+      assets: [
+        createTestAssetManifest({
+          id: 'piper-en',
+          name: 'Piper English',
+          category: 'speech',
+          localFilePath: fixture.filePath,
+          checksum: fixture.checksum,
+        }),
+      ],
+    });
 
-    const service = await createAssetService(rootPath, { seedCatalog: false });
-    service.seedCatalog([
-      {
-        id: 'piper-en',
-        name: 'Piper English',
-        kind: ASSET_KINDS.MODEL,
-        category: ASSET_CATEGORIES.SPEECH,
-        version: '1.0.0',
-        manifest,
-      },
-    ]);
-
+    const service = await createAssetService(rootPath, registry);
     await service.downloadAsset('piper-en');
-    const deleted = await service.deleteAsset('piper-en');
+    await service.deleteAsset('piper-en');
 
-    expect(deleted.status).toBe('missing');
-    expect(deleted.filePath).toBeNull();
+    const model = service.listModelViews().find((entry) => entry.id === 'piper-en');
+    expect(model?.status).toBe('not-installed');
+    expect(model?.installLocation).toBeNull();
     expect(service.resolveAsset('piper-en')).toBeNull();
+    expect(service.getInstallation('piper-en')).toBeNull();
 
     service.close();
   });

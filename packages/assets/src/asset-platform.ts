@@ -1,103 +1,55 @@
-import { createRequire } from 'node:module';
 import { mkdir } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-import {
-  buildCatalogMetadataMap,
-  discoverAssetCatalogs,
-  toCreateAssetInput,
-  type CatalogMetadata,
-  type DiscoveredCatalog,
-} from './discovery/catalog-discovery.js';
-import { toModelView, type ModelView } from './presentation/model-view.js';
+import { AssetManifestRegistry } from './registry/asset-manifest-registry.js';
+import { RegistryLoader } from './registry/registry-loader.js';
 import { AssetService } from './service/asset-service.js';
 import type { AssetServiceOptions } from './service/asset-service.js';
+import type { ModelView } from './presentation/model-view.js';
 import type { DownloadRecord } from './types.js';
 
-export interface AssetPlatformOptions extends Omit<AssetServiceOptions, 'seedCatalog'> {
-  readonly catalogRoots?: readonly string[];
+export interface AssetPlatformOptions {
+  readonly rootPath: string;
+  readonly registryRoots?: readonly string[];
+  readonly registry?: AssetManifestRegistry;
 }
 
 export interface AssetPlatform {
   readonly service: AssetService;
-  getCatalogMetadata(): ReadonlyMap<string, CatalogMetadata>;
+  readonly registry: AssetManifestRegistry;
   listModels(): readonly ModelView[];
-  refreshCatalog(): Promise<void>;
+  refreshRegistry(): Promise<void>;
   close(): void;
-}
-
-function resolveDefaultCatalogRoots(): string[] {
-  const require = createRequire(import.meta.url);
-  const roots: string[] = [];
-
-  try {
-    const providersPackageJson = require.resolve('@dubforge/providers/package.json');
-    const providersRoot = dirname(providersPackageJson);
-    roots.push(join(providersRoot, 'dist/assets/catalogs'));
-    roots.push(join(providersRoot, 'src/assets/catalogs'));
-  } catch {
-    // Providers package is unavailable in this runtime.
-  }
-
-  const moduleDir = dirname(fileURLToPath(import.meta.url));
-  roots.push(join(moduleDir, 'catalog'));
-
-  return roots;
-}
-
-function applyDiscoveredCatalog(service: AssetService, discovered: DiscoveredCatalog): void {
-  service.initialize();
-  service.seedCatalog(discovered.assets.map(toCreateAssetInput), discovered.dependencies);
 }
 
 export async function createAssetPlatform(options: AssetPlatformOptions): Promise<AssetPlatform> {
   await mkdir(options.rootPath, { recursive: true });
 
-  const service = new AssetService({
-    ...options,
-    seedCatalog: false,
-  });
+  const registryRoots = options.registryRoots ?? RegistryLoader.resolveDefaultRegistryRoots();
 
-  const catalogRoots = options.catalogRoots ?? resolveDefaultCatalogRoots();
-  let catalogMetadata: ReadonlyMap<string, CatalogMetadata> = new Map<string, CatalogMetadata>();
+  const registry = options.registry ?? (await new RegistryLoader({ registryRoots }).load());
+
+  const service = new AssetService({
+    rootPath: options.rootPath,
+    registry,
+  } satisfies AssetServiceOptions);
+
+  service.initialize();
 
   const platform: AssetPlatform = {
     service,
-    getCatalogMetadata(): ReadonlyMap<string, CatalogMetadata> {
-      return catalogMetadata;
-    },
+    registry,
     listModels(): readonly ModelView[] {
-      service.initialize();
-      const dependencyTracker = service.getDependencyTracker();
-      const downloadManager = service.getDownloadManager();
-
-      return service.listAssets().map((asset) => {
-        const dependents = dependencyTracker.listDependents(asset.id).map((dependentId) => {
-          const dependentAsset = service.getAsset(dependentId);
-          return dependentAsset?.name ?? dependentId;
-        });
-
-        return toModelView({
-          asset,
-          downloads: downloadManager.listDownloadsByAsset(asset.id),
-          metadata: catalogMetadata.get(asset.id),
-          dependents,
-        });
-      });
+      return service.listModelViews();
     },
-    async refreshCatalog(): Promise<void> {
-      const discovered = await discoverAssetCatalogs(catalogRoots);
-      applyDiscoveredCatalog(service, discovered);
-      catalogMetadata = buildCatalogMetadataMap(discovered);
-      await service.checkAllHealth();
+    async refreshRegistry(): Promise<void> {
+      await service.refreshInstallationHealth();
     },
     close(): void {
       service.close();
     },
   };
 
-  await platform.refreshCatalog();
+  await platform.refreshRegistry();
   return platform;
 }
 
@@ -107,16 +59,6 @@ export async function enqueueBackgroundDownload(
   targetVersion?: string,
 ): Promise<DownloadRecord> {
   service.initialize();
-  const asset = service.getAsset(assetId);
-  if (asset === null) {
-    throw new Error(`Asset not found: ${assetId}`);
-  }
-
-  const version = targetVersion ?? asset.version;
-  const repository = service.getRepository();
-  const manifest = repository.requireManifest(assetId);
-  const downloadManager = service.getDownloadManager();
-  const download = await downloadManager.enqueueDownload(assetId, version, manifest);
-  void downloadManager.startDownload(download.id, manifest).catch(() => undefined);
-  return download;
+  service.getRegistry().requireAsset(assetId);
+  return service.downloadAssetInBackground(assetId, targetVersion);
 }

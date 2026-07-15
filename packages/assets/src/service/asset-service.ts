@@ -2,29 +2,29 @@ import { mkdir, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 import { BINARIES_DIRECTORY } from '../constants.js';
-import { DEFAULT_ASSET_CATALOG, DEFAULT_ASSET_DEPENDENCIES } from '../catalog/default-catalog.js';
 import { AssetDatabase } from '../database/connection.js';
-import { DependencyTracker } from '../dependencies/dependency-tracker.js';
 import { DownloadManager } from '../download/download-manager.js';
 import { AssetHealthService } from '../health/asset-health.js';
 import { runMigrations } from '../migrations/runner.js';
+import { toModelView, type ModelHealthStatus, type ModelView } from '../presentation/model-view.js';
+import type { AssetManifestRegistry } from '../registry/asset-manifest-registry.js';
 import { AssetRepository } from '../repository/asset-repository.js';
 import { AssetResolver } from '../resolver/asset-resolver.js';
 import { ASSET_STATUSES } from '../types.js';
-import type {
-  AssetHealthReport,
-  AssetRecord,
-  CreateAssetInput,
-  DownloadRecord,
-  ResolvedAsset,
-} from '../types.js';
-import type { DependencyResolution } from '../dependencies/dependency-tracker.js';
+import type { AssetHealthReport, AssetRecord, DownloadRecord, ResolvedAsset } from '../types.js';
 import { AssetVerifier } from '../verification/verifier.js';
 import { VersionManager } from '../version/version-manager.js';
 
 export interface AssetServiceOptions {
   readonly rootPath: string;
-  readonly seedCatalog?: boolean;
+  readonly registry: AssetManifestRegistry;
+}
+
+export interface DependencyResolution {
+  readonly assetId: string;
+  readonly satisfied: boolean;
+  readonly missingDependencies: readonly string[];
+  readonly unsatisfiedRequired: readonly string[];
 }
 
 export class AssetService {
@@ -33,9 +33,9 @@ export class AssetService {
   private readonly downloadManager: DownloadManager;
   private readonly verifier: AssetVerifier;
   private readonly resolver: AssetResolver;
-  private readonly dependencyTracker: DependencyTracker;
   private readonly healthService: AssetHealthService;
   private readonly versionManager: VersionManager;
+  private healthByAssetId = new Map<string, ModelHealthStatus>();
   private initialized = false;
 
   constructor(private readonly options: AssetServiceOptions) {
@@ -51,7 +51,6 @@ export class AssetService {
     });
     this.verifier = new AssetVerifier(this.repository);
     this.resolver = new AssetResolver(this.repository, this.versionManager);
-    this.dependencyTracker = new DependencyTracker(this.repository);
     this.healthService = new AssetHealthService(
       this.repository,
       this.verifier,
@@ -64,73 +63,48 @@ export class AssetService {
       return;
     }
 
-    if (this.options.seedCatalog !== false) {
-      this.seedCatalog(DEFAULT_ASSET_CATALOG, DEFAULT_ASSET_DEPENDENCIES);
-    }
-
     this.initialized = true;
   }
 
-  seedCatalog(
-    catalog: readonly CreateAssetInput[],
-    dependencies: readonly {
-      readonly assetId: string;
-      readonly dependsOnAssetId: string;
-      readonly optional: boolean;
-    }[] = [],
-  ): void {
-    const seed = () => {
-      this.database.transaction(() => {
-        for (const entry of catalog) {
-          const existing = this.repository.getAssetById(entry.id);
-          if (existing === null) {
-            this.repository.createAsset(entry);
-          } else if (entry.manifest !== undefined && entry.manifest !== null) {
-            this.repository.upsertManifest(entry.id, entry.manifest);
-          }
-        }
+  listModelViews(): readonly ModelView[] {
+    this.ensureInitialized();
 
-        for (const dependency of dependencies) {
-          const existingDependencies = this.repository.listDependencies(dependency.assetId);
-          const alreadyExists = existingDependencies.some(
-            (entry) => entry.dependsOnAssetId === dependency.dependsOnAssetId,
-          );
-          if (!alreadyExists) {
-            this.repository.addDependency(
-              dependency.assetId,
-              dependency.dependsOnAssetId,
-              dependency.optional,
-            );
-          }
-        }
+    return this.options.registry.listAssets().map((registered) => {
+      const installation = this.repository.getInstallation(registered.id);
+      const downloads = this.downloadManager.listDownloadsByAsset(registered.id);
+      const health = this.healthByAssetId.get(registered.id) ?? null;
+
+      return toModelView({
+        registered,
+        installation,
+        downloads,
+        health,
       });
-    };
-
-    seed();
+    });
   }
 
-  listAssets(): readonly AssetRecord[] {
+  listInstalledAssets(): readonly AssetRecord[] {
     this.ensureInitialized();
-    return this.repository.listAssets();
+    return this.repository.listAssets().filter((asset) => asset.status === ASSET_STATUSES.READY);
   }
 
-  getAsset(assetId: string): AssetRecord | null {
+  getInstallation(assetId: string): AssetRecord | null {
     this.ensureInitialized();
-    return this.repository.getAssetById(assetId);
+    this.options.registry.requireAsset(assetId);
+    return this.repository.getInstallation(assetId);
   }
 
   async downloadAsset(assetId: string, targetVersion?: string): Promise<DownloadRecord> {
     this.ensureInitialized();
 
-    const asset = this.repository.getAssetById(assetId);
-    if (asset === null) {
-      throw new Error(`Asset not found: ${assetId}`);
-    }
-
-    const version = targetVersion ?? asset.version;
-    const manifest = this.repository.requireManifest(assetId);
+    const registered = this.options.registry.requireAsset(assetId);
+    this.repository.ensureInstallationRecord(registered);
+    const version = targetVersion ?? registered.version;
+    const manifest = registered.downloadManifest;
     const download = await this.downloadManager.enqueueDownload(assetId, version, manifest);
-    return this.downloadManager.startDownload(download.id, manifest);
+    const completed = await this.downloadManager.startDownload(download.id, manifest);
+    await this.refreshInstallationHealth();
+    return completed;
   }
 
   async downloadAssetInBackground(
@@ -139,13 +113,10 @@ export class AssetService {
   ): Promise<DownloadRecord> {
     this.ensureInitialized();
 
-    const asset = this.repository.getAssetById(assetId);
-    if (asset === null) {
-      throw new Error(`Asset not found: ${assetId}`);
-    }
-
-    const version = targetVersion ?? asset.version;
-    const manifest = this.repository.requireManifest(assetId);
+    const registered = this.options.registry.requireAsset(assetId);
+    this.repository.ensureInstallationRecord(registered);
+    const version = targetVersion ?? registered.version;
+    const manifest = registered.downloadManifest;
     const download = await this.downloadManager.enqueueDownload(assetId, version, manifest);
     void this.downloadManager.startDownload(download.id, manifest).catch(() => undefined);
     return download;
@@ -154,44 +125,42 @@ export class AssetService {
   async repairAsset(assetId: string): Promise<DownloadRecord> {
     this.ensureInitialized();
 
-    const asset = this.repository.getAssetById(assetId);
-    if (asset === null) {
-      throw new Error(`Asset not found: ${assetId}`);
-    }
+    const registered = this.options.registry.requireAsset(assetId);
+    const installation = this.repository.getInstallation(assetId);
 
-    if (asset.filePath !== null) {
-      await rm(dirname(asset.filePath), { recursive: true, force: true });
+    if (installation?.filePath !== null && installation?.filePath !== undefined) {
+      await rm(dirname(installation.filePath), { recursive: true, force: true });
       this.repository.clearAssetBinary(assetId, ASSET_STATUSES.CORRUPTED);
     }
 
-    return this.downloadAssetInBackground(assetId, asset.version);
+    return this.downloadAssetInBackground(assetId, registered.version);
   }
 
-  async deleteAsset(assetId: string): Promise<AssetRecord> {
+  async deleteAsset(assetId: string): Promise<void> {
     this.ensureInitialized();
+    this.options.registry.requireAsset(assetId);
 
-    const asset = this.repository.getAssetById(assetId);
-    if (asset === null) {
-      throw new Error(`Asset not found: ${assetId}`);
+    const installation = this.repository.getInstallation(assetId);
+    if (installation?.filePath !== null && installation?.filePath !== undefined) {
+      await rm(dirname(installation.filePath), { recursive: true, force: true });
     }
 
-    if (asset.filePath !== null) {
-      await rm(dirname(asset.filePath), { recursive: true, force: true });
-    }
-
-    return this.repository.clearAssetBinary(assetId, ASSET_STATUSES.MISSING);
+    this.repository.deleteInstallation(assetId);
+    this.healthByAssetId.delete(assetId);
   }
 
-  async updateAsset(assetId: string, targetVersion: string): Promise<DownloadRecord> {
+  async updateAsset(assetId: string, targetVersion?: string): Promise<DownloadRecord> {
     this.ensureInitialized();
 
-    const asset = this.repository.getAssetById(assetId);
-    if (asset === null) {
-      throw new Error(`Asset not found: ${assetId}`);
+    const registered = this.options.registry.requireAsset(assetId);
+    const version = targetVersion ?? registered.latestVersion;
+    const installation = this.repository.ensureInstallationRecord(registered);
+
+    if (installation.status === ASSET_STATUSES.READY) {
+      this.repository.updateAssetMetadata(assetId, { status: ASSET_STATUSES.OUTDATED });
     }
 
-    this.repository.updateAssetMetadata(assetId, { status: ASSET_STATUSES.OUTDATED });
-    return this.downloadAssetInBackground(assetId, targetVersion);
+    return this.downloadAssetInBackground(assetId, version);
   }
 
   resolveAsset(assetId: string, requireReady = true): ResolvedAsset | null {
@@ -201,13 +170,57 @@ export class AssetService {
 
   resolveDependencies(assetId: string): DependencyResolution {
     this.ensureInitialized();
-    return this.dependencyTracker.resolveDependencies(assetId);
+    this.options.registry.requireAsset(assetId);
+
+    const dependencies = this.options.registry.getDependencies(assetId);
+    const missingDependencies: string[] = [];
+    const unsatisfiedRequired: string[] = [];
+
+    for (const dependency of dependencies) {
+      const installation = this.repository.getInstallation(dependency.dependsOnAssetId);
+      if (installation === null) {
+        missingDependencies.push(dependency.dependsOnAssetId);
+        if (!dependency.optional) {
+          unsatisfiedRequired.push(dependency.dependsOnAssetId);
+        }
+        continue;
+      }
+
+      if (dependency.optional) {
+        continue;
+      }
+
+      if (installation.status !== ASSET_STATUSES.READY) {
+        unsatisfiedRequired.push(dependency.dependsOnAssetId);
+      }
+    }
+
+    return {
+      assetId,
+      satisfied: missingDependencies.length === 0 && unsatisfiedRequired.length === 0,
+      missingDependencies,
+      unsatisfiedRequired,
+    };
   }
 
   async verifyAsset(assetId: string): Promise<boolean> {
     this.ensureInitialized();
+    const installation = this.repository.getInstallation(assetId);
+    if (installation === null) {
+      return false;
+    }
+
     const result = await this.verifier.verifyAsset(assetId);
     return result.valid;
+  }
+
+  async refreshInstallationHealth(): Promise<void> {
+    this.ensureInitialized();
+
+    const reports = await this.checkInstalledHealth();
+    this.healthByAssetId = new Map(
+      reports.map((report) => [report.assetId, this.toModelHealth(report)]),
+    );
   }
 
   async checkHealth(assetId: string): Promise<AssetHealthReport> {
@@ -215,9 +228,20 @@ export class AssetService {
     return this.healthService.checkAsset(assetId);
   }
 
-  async checkAllHealth(): Promise<readonly AssetHealthReport[]> {
+  async checkInstalledHealth(): Promise<readonly AssetHealthReport[]> {
     this.ensureInitialized();
-    return this.healthService.checkAll();
+
+    const reports: AssetHealthReport[] = [];
+    for (const registered of this.options.registry.listAssets()) {
+      const installation = this.repository.getInstallation(registered.id);
+      if (installation?.status !== ASSET_STATUSES.READY) {
+        continue;
+      }
+
+      reports.push(await this.healthService.checkAsset(registered.id));
+    }
+
+    return reports;
   }
 
   getRepository(): AssetRepository {
@@ -230,9 +254,8 @@ export class AssetService {
     return this.downloadManager;
   }
 
-  getDependencyTracker(): DependencyTracker {
-    this.ensureInitialized();
-    return this.dependencyTracker;
+  getRegistry(): AssetManifestRegistry {
+    return this.options.registry;
   }
 
   getVersionManager(): VersionManager {
@@ -241,6 +264,17 @@ export class AssetService {
 
   close(): void {
     this.database.close();
+  }
+
+  private toModelHealth(report: AssetHealthReport): ModelHealthStatus {
+    switch (report.status) {
+      case 'healthy':
+        return 'healthy';
+      case 'degraded':
+        return 'degraded';
+      case 'unhealthy':
+        return 'unhealthy';
+    }
   }
 
   private ensureInitialized(): void {
@@ -252,10 +286,11 @@ export class AssetService {
 
 export async function createAssetService(
   rootPath: string,
-  options: Omit<AssetServiceOptions, 'rootPath'> = {},
+  registry: AssetManifestRegistry,
 ): Promise<AssetService> {
   await mkdir(rootPath, { recursive: true });
-  const service = new AssetService({ rootPath, ...options });
+  const service = new AssetService({ rootPath, registry });
   service.initialize();
+  await service.refreshInstallationHealth();
   return service;
 }

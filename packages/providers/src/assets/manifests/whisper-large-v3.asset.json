@@ -1,0 +1,17 @@
+{
+  "id": "whisper-large-v3",
+  "name": "Whisper Large v3",
+  "kind": "model",
+  "category": "speech-to-text",
+  "version": "3.0.0",
+  "latestVersion": "3.0.0",
+  "estimatedSizeBytes": 3090000000,
+  "requiredBy": ["Speech Recognition", "Balanced Profile", "Studio Profile"],
+  "sources": [
+    {
+      "type": "huggingface",
+      "url": "https://huggingface.co/openai/whisper-large-v3/resolve/main/pytorch_model.bin"
+    }
+  ],
+  "filename": "asset.bin"
+}

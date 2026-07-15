@@ -1,0 +1,17 @@
+{
+  "id": "piper-en",
+  "name": "Piper English",
+  "kind": "model",
+  "category": "speech",
+  "version": "1.0.0",
+  "latestVersion": "1.0.0",
+  "estimatedSizeBytes": 1024,
+  "requiredBy": ["Speech Generation"],
+  "sources": [
+    {
+      "type": "local-file",
+      "url": "file://placeholder"
+    }
+  ],
+  "filename": "asset.bin"
+}

@@ -41,13 +41,12 @@ export class DesktopModelService {
   }
 
   async updateModel(id: string): Promise<Model> {
-    const metadata = this.assetPlatform.getCatalogMetadata().get(id);
-    const targetVersion = metadata?.latestVersion;
-    if (targetVersion === undefined) {
-      throw new Error(`No update target version found for model: ${id}`);
+    const registered = this.assetPlatform.registry.getAsset(id);
+    if (registered === null) {
+      throw new Error(`Model not found in registry: ${id}`);
     }
 
-    await this.assetPlatform.service.updateAsset(id, targetVersion);
+    await this.assetPlatform.service.updateAsset(id, registered.latestVersion);
     this.notifyListeners();
 
     const model = this.findModel(id);
@@ -61,7 +60,7 @@ export class DesktopModelService {
   async verifyModel(id: string): Promise<Model> {
     const valid = await this.assetPlatform.service.verifyAsset(id);
     if (!valid) {
-      await this.assetPlatform.refreshCatalog();
+      await this.assetPlatform.refreshRegistry();
     }
 
     this.notifyListeners();
@@ -106,7 +105,7 @@ export class DesktopModelService {
         this.assetPlatform.service.getDownloadManager().listActiveDownloads().length > 0;
 
       if (hasActiveDownloads) {
-        void this.assetPlatform.refreshCatalog().then(() => {
+        void this.assetPlatform.refreshRegistry().then(() => {
           this.notifyListeners();
         });
       }

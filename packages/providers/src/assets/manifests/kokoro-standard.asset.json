@@ -1,0 +1,17 @@
+{
+  "id": "kokoro-standard",
+  "name": "Kokoro Standard",
+  "kind": "model",
+  "category": "speech",
+  "version": "1.0.0",
+  "latestVersion": "1.0.0",
+  "estimatedSizeBytes": 420000000,
+  "requiredBy": ["Speech Generation", "Fast Profile"],
+  "sources": [
+    {
+      "type": "mirror",
+      "url": "https://github.com/hexgrad/kokoro/releases/download/v1.0.0/kokoro-standard.bin"
+    }
+  ],
+  "filename": "asset.bin"
+}

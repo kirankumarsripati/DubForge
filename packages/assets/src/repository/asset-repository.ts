@@ -12,6 +12,7 @@ import type {
 } from '../types.js';
 import { assetManifestSchema } from '../discovery/catalog-schema.js';
 import type { AssetDownloadManifest } from '../download/types.js';
+import type { RegisteredAsset } from '../registry/asset-manifest-registry.js';
 
 interface AssetRow {
   readonly id: string;
@@ -301,6 +302,30 @@ export class AssetRepository {
     }
 
     return manifest;
+  }
+
+  ensureInstallationRecord(registered: RegisteredAsset): AssetRecord {
+    const existing = this.getAssetById(registered.id);
+    if (existing !== null) {
+      return existing;
+    }
+
+    return this.createAsset({
+      id: registered.id,
+      name: registered.name,
+      kind: registered.kind,
+      category: registered.category,
+      version: registered.version,
+      sourceUrl: null,
+    });
+  }
+
+  deleteInstallation(assetId: string): void {
+    this.deleteAssetStatement.run(assetId);
+  }
+
+  getInstallation(assetId: string): AssetRecord | null {
+    return this.getAssetById(assetId);
   }
 
   updateAssetMetadata(assetId: string, input: UpdateAssetMetadataInput): AssetRecord {

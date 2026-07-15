@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "assets": [
+    { "id": "whisper-base", "manifestPath": "manifests/whisper-base.asset.json" },
+    { "id": "piper-en", "manifestPath": "manifests/piper-en.asset.json" },
+    { "id": "base-model", "manifestPath": "manifests/base-model.asset.json" },
+    { "id": "extended-model", "manifestPath": "manifests/extended-model.asset.json" }
+  ],
+  "dependencies": [
+    {
+      "assetId": "extended-model",
+      "dependsOnAssetId": "base-model",
+      "optional": false
+    }
+  ]
+}

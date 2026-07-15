@@ -2,11 +2,13 @@ import { z } from 'zod';
 
 export const modelCategorySchema = z.enum(['speech-to-text', 'translation', 'speech']);
 
+export const modelHealthStatusSchema = z.enum(['healthy', 'degraded', 'unhealthy']);
+
 export const modelStatusSchema = z.enum([
+  'not-installed',
   'installed',
   'downloading',
   'verifying',
-  'missing',
   'corrupted',
   'update-available',
 ]);
@@ -20,6 +22,8 @@ export const modelResponseSchema = z.object({
   latestVersion: z.string().min(1),
   sizeBytes: z.number().int().nonnegative(),
   checksum: z.string().nullable(),
+  installLocation: z.string().nullable(),
+  health: modelHealthStatusSchema.nullable(),
   downloadProgress: z.number().int().min(0).max(100).nullable(),
   requiredBy: z.array(z.string().min(1)),
 });

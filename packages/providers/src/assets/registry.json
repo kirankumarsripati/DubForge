@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "assets": [
+    { "id": "whisper-medium", "manifestPath": "manifests/whisper-medium.asset.json" },
+    { "id": "whisper-large-v3", "manifestPath": "manifests/whisper-large-v3.asset.json" },
+    { "id": "seamless-m4t", "manifestPath": "manifests/seamless-m4t.asset.json" },
+    { "id": "kokoro-v1", "manifestPath": "manifests/kokoro-v1.asset.json" },
+    { "id": "kokoro-standard", "manifestPath": "manifests/kokoro-standard.asset.json" },
+    { "id": "kokoro-premium", "manifestPath": "manifests/kokoro-premium.asset.json" }
+  ],
+  "dependencies": [
+    {
+      "assetId": "whisper-large-v3",
+      "dependsOnAssetId": "whisper-medium",
+      "optional": true
+    }
+  ]
+}

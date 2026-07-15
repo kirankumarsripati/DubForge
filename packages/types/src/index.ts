@@ -81,7 +81,9 @@ export interface Job {
 export type ModelCategory = 'speech-to-text' | 'translation' | 'speech';
 
 export type ModelStatus =
-  'installed' | 'downloading' | 'verifying' | 'missing' | 'corrupted' | 'update-available';
+  'not-installed' | 'installed' | 'downloading' | 'verifying' | 'corrupted' | 'update-available';
+
+export type ModelHealthStatus = 'healthy' | 'degraded' | 'unhealthy';
 
 export interface Model {
   readonly id: string;
@@ -92,6 +94,8 @@ export interface Model {
   readonly latestVersion: string;
   readonly sizeBytes: number;
   readonly checksum: string | null;
+  readonly installLocation: string | null;
+  readonly health: ModelHealthStatus | null;
   readonly downloadProgress: number | null;
   readonly requiredBy: readonly string[];
 }
