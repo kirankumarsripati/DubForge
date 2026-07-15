@@ -79,4 +79,24 @@ export const MIGRATION_001_INITIAL: Migration = {
   },
 };
 
-export const ALL_MIGRATIONS: readonly Migration[] = [MIGRATION_001_INITIAL];
+export const MIGRATION_002_DOWNLOAD_MANIFEST: Migration = {
+  version: 2,
+  name: 'download_manifest',
+  up: (db) => {
+    db.exec(`
+      ALTER TABLE assets ADD COLUMN manifest_json TEXT;
+      ALTER TABLE downloads ADD COLUMN temp_path TEXT;
+    `);
+
+    db.exec(`
+      UPDATE downloads
+      SET temp_path = target_path || '.part'
+      WHERE temp_path IS NULL;
+    `);
+  },
+};
+
+export const ALL_MIGRATIONS: readonly Migration[] = [
+  MIGRATION_001_INITIAL,
+  MIGRATION_002_DOWNLOAD_MANIFEST,
+];

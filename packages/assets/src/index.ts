@@ -35,11 +35,26 @@ export { MigrationRunner, runMigrations } from './migrations/runner.js';
 
 export { AssetRepository } from './repository/asset-repository.js';
 
-export { DownloadManager, SimulatedDownloadContentProvider } from './download/download-manager.js';
+export { DownloadManager } from './download/download-manager.js';
+export type { DownloadManagerOptions } from './download/download-manager.js';
+export {
+  createDefaultDownloadProviderRegistry,
+  DownloadProviderRegistry,
+} from './download/download-provider-registry.js';
+export { DOWNLOAD_SOURCE_TYPES } from './download/source-types.js';
+export type { DownloadSourceType } from './download/source-types.js';
 export type {
-  DownloadContentProvider,
-  DownloadManagerOptions,
-} from './download/download-manager.js';
+  AssetDownloadManifest,
+  DownloadExecutionContext,
+  DownloadProgressUpdate,
+  DownloadProvider,
+  DownloadSource,
+  HttpDownloadOptions,
+} from './download/types.js';
+export { GitHubReleaseDownloadProvider } from './download/providers/github-release-download-provider.js';
+export { HuggingFaceDownloadProvider } from './download/providers/huggingface-download-provider.js';
+export { LocalFileDownloadProvider } from './download/providers/local-file-download-provider.js';
+export { MirrorDownloadProvider } from './download/providers/mirror-download-provider.js';
 
 export { AssetVerifier } from './verification/verifier.js';
 export type { VerificationResult } from './verification/verifier.js';

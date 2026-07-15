@@ -1,6 +1,28 @@
 import { z } from 'zod';
 
+import { DOWNLOAD_SOURCE_TYPES } from '../download/source-types.js';
 import { ASSET_CATEGORIES, ASSET_KINDS } from '../types.js';
+
+export const downloadSourceSchema = z.object({
+  type: z.enum([
+    DOWNLOAD_SOURCE_TYPES.GITHUB_RELEASE,
+    DOWNLOAD_SOURCE_TYPES.HUGGINGFACE,
+    DOWNLOAD_SOURCE_TYPES.LOCAL_FILE,
+    DOWNLOAD_SOURCE_TYPES.MIRROR,
+  ]),
+  url: z.string().min(1),
+  headers: z.record(z.string()).optional(),
+});
+
+export const assetManifestSchema = z.object({
+  sources: z.array(downloadSourceSchema).min(1),
+  checksum: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/i)
+    .nullable()
+    .optional(),
+  filename: z.string().min(1).default('asset.bin'),
+});
 
 export const discoveredAssetEntrySchema = z.object({
   id: z.string().min(1),
@@ -17,6 +39,13 @@ export const discoveredAssetEntrySchema = z.object({
   estimatedSizeBytes: z.number().int().nonnegative(),
   requiredBy: z.array(z.string().min(1)),
   sourceUrl: z.string().url().nullable().optional(),
+  sources: z.array(downloadSourceSchema).min(1),
+  checksum: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/i)
+    .nullable()
+    .optional(),
+  filename: z.string().min(1).optional(),
 });
 
 export const discoveredDependencySchema = z.object({

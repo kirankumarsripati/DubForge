@@ -2,7 +2,12 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { CreateAssetInput } from '../types.js';
-import { assetCatalogFileSchema, type DiscoveredAssetEntry } from './catalog-schema.js';
+import {
+  assetCatalogFileSchema,
+  assetManifestSchema,
+  type DiscoveredAssetEntry,
+} from './catalog-schema.js';
+import type { AssetDownloadManifest } from '../download/types.js';
 
 export interface DiscoveredCatalog {
   readonly assets: readonly DiscoveredAssetEntry[];
@@ -96,6 +101,21 @@ export function toCreateAssetInput(entry: DiscoveredAssetEntry): CreateAssetInpu
     category: entry.category,
     version: entry.version,
     sourceUrl: entry.sourceUrl ?? null,
+    manifest: toAssetManifest(entry),
+  };
+}
+
+export function toAssetManifest(entry: DiscoveredAssetEntry): AssetDownloadManifest {
+  const parsed = assetManifestSchema.parse({
+    sources: entry.sources,
+    checksum: entry.checksum ?? null,
+    filename: entry.filename ?? 'asset.bin',
+  });
+
+  return {
+    sources: parsed.sources,
+    checksum: parsed.checksum ?? null,
+    filename: parsed.filename,
   };
 }
 

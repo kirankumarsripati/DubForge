@@ -8,7 +8,14 @@
       "version": "1.0.0",
       "latestVersion": "1.0.0",
       "estimatedSizeBytes": 1530000000,
-      "requiredBy": ["Speech Recognition", "Fast Profile"]
+      "requiredBy": ["Speech Recognition", "Fast Profile"],
+      "sources": [
+        {
+          "type": "huggingface",
+          "url": "https://huggingface.co/openai/whisper-medium/resolve/main/pytorch_model.bin"
+        }
+      ],
+      "filename": "asset.bin"
     },
     {
       "id": "whisper-large-v3",
@@ -18,7 +25,14 @@
       "version": "3.0.0",
       "latestVersion": "3.0.0",
       "estimatedSizeBytes": 3090000000,
-      "requiredBy": ["Speech Recognition", "Balanced Profile", "Studio Profile"]
+      "requiredBy": ["Speech Recognition", "Balanced Profile", "Studio Profile"],
+      "sources": [
+        {
+          "type": "huggingface",
+          "url": "https://huggingface.co/openai/whisper-large-v3/resolve/main/pytorch_model.bin"
+        }
+      ],
+      "filename": "asset.bin"
     },
     {
       "id": "seamless-m4t",
@@ -28,7 +42,14 @@
       "version": "1.0.0",
       "latestVersion": "1.0.0",
       "estimatedSizeBytes": 4200000000,
-      "requiredBy": ["Translation", "Fast Profile", "Balanced Profile", "Studio Profile"]
+      "requiredBy": ["Translation", "Fast Profile", "Balanced Profile", "Studio Profile"],
+      "sources": [
+        {
+          "type": "huggingface",
+          "url": "https://huggingface.co/facebook/seamless-m4t-large/resolve/main/model.bin"
+        }
+      ],
+      "filename": "asset.bin"
     },
     {
       "id": "kokoro-v1",
@@ -38,7 +59,14 @@
       "version": "1.0.0",
       "latestVersion": "1.0.0",
       "estimatedSizeBytes": 520000000,
-      "requiredBy": ["Speech Generation", "Balanced Profile", "Studio Profile"]
+      "requiredBy": ["Speech Generation", "Balanced Profile", "Studio Profile"],
+      "sources": [
+        {
+          "type": "mirror",
+          "url": "https://github.com/hexgrad/kokoro/releases/download/v1.0.0/kokoro-v1.bin"
+        }
+      ],
+      "filename": "asset.bin"
     },
     {
       "id": "kokoro-standard",
@@ -48,7 +76,14 @@
       "version": "1.0.0",
       "latestVersion": "1.0.0",
       "estimatedSizeBytes": 420000000,
-      "requiredBy": ["Speech Generation", "Fast Profile"]
+      "requiredBy": ["Speech Generation", "Fast Profile"],
+      "sources": [
+        {
+          "type": "mirror",
+          "url": "https://github.com/hexgrad/kokoro/releases/download/v1.0.0/kokoro-standard.bin"
+        }
+      ],
+      "filename": "asset.bin"
     },
     {
       "id": "kokoro-premium",
@@ -58,7 +93,14 @@
       "version": "1.0.0",
       "latestVersion": "1.0.0",
       "estimatedSizeBytes": 780000000,
-      "requiredBy": ["Speech Generation", "Studio Profile"]
+      "requiredBy": ["Speech Generation", "Studio Profile"],
+      "sources": [
+        {
+          "type": "mirror",
+          "url": "https://github.com/hexgrad/kokoro/releases/download/v1.0.0/kokoro-premium.bin"
+        }
+      ],
+      "filename": "asset.bin"
     }
   ],
   "dependencies": [

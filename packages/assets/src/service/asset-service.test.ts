@@ -10,7 +10,7 @@ describe('MigrationRunner', () => {
   it('applies initial migration once', () => {
     const database = new AssetDatabase();
     const firstApplied = runMigrations(database.raw);
-    expect(firstApplied).toHaveLength(1);
+    expect(firstApplied).toHaveLength(2);
 
     const secondApplied = runMigrations(database.raw);
     expect(secondApplied).toHaveLength(0);
@@ -40,7 +40,10 @@ describe('MigrationRunner', () => {
       .prepare('SELECT version, name FROM schema_migrations ORDER BY version ASC')
       .all() as { version: number; name: string }[];
 
-    expect(version).toEqual([{ version: 1, name: 'initial' }]);
+    expect(version).toEqual([
+      { version: 1, name: 'initial' },
+      { version: 2, name: 'download_manifest' },
+    ]);
     database.close();
   });
 });
@@ -62,13 +65,21 @@ describe('AssetService integration', () => {
 
   it('seeds catalog and downloads asset with verification', async () => {
     const { createAssetService } = await import('../service/asset-service.js');
-    const service = await createAssetService(rootPath);
-    const assets = service.listAssets();
+    const { ASSET_CATEGORIES, ASSET_KINDS } = await import('../types.js');
+    const { createLocalFileManifest } = await import('../test/download-fixtures.js');
+    const { manifest } = await createLocalFileManifest('whisper-base-binary', rootPath);
 
-    expect(assets.length).toBeGreaterThan(0);
-
-    const whisper = assets.find((asset) => asset.id === 'whisper-base');
-    expect(whisper).toBeDefined();
+    const service = await createAssetService(rootPath, { seedCatalog: false });
+    service.seedCatalog([
+      {
+        id: 'whisper-base',
+        name: 'Whisper Base',
+        kind: ASSET_KINDS.MODEL,
+        category: ASSET_CATEGORIES.SPEECH_TO_TEXT,
+        version: '1.0.0',
+        manifest,
+      },
+    ]);
 
     const download = await service.downloadAsset('whisper-base');
     expect(download.status).toBe('completed');
@@ -89,6 +100,10 @@ describe('AssetService integration', () => {
   it('tracks required dependencies', async () => {
     const { createAssetService } = await import('../service/asset-service.js');
     const { ASSET_CATEGORIES, ASSET_KINDS } = await import('../types.js');
+    const { createLocalFileManifest } = await import('../test/download-fixtures.js');
+    const baseFixture = await createLocalFileManifest('base-model-binary', rootPath);
+    const extendedFixture = await createLocalFileManifest('extended-model-binary', rootPath);
+
     const service = await createAssetService(rootPath, { seedCatalog: false });
     service.seedCatalog(
       [
@@ -98,6 +113,7 @@ describe('AssetService integration', () => {
           kind: ASSET_KINDS.MODEL,
           category: ASSET_CATEGORIES.SPEECH_TO_TEXT,
           version: '1.0.0',
+          manifest: baseFixture.manifest,
         },
         {
           id: 'extended-model',
@@ -105,6 +121,7 @@ describe('AssetService integration', () => {
           kind: ASSET_KINDS.MODEL,
           category: ASSET_CATEGORIES.SPEECH_TO_TEXT,
           version: '1.0.0',
+          manifest: extendedFixture.manifest,
         },
       ],
       [{ assetId: 'extended-model', dependsOnAssetId: 'base-model', optional: false }],
@@ -122,7 +139,21 @@ describe('AssetService integration', () => {
 
   it('deletes asset binary and resets metadata', async () => {
     const { createAssetService } = await import('../service/asset-service.js');
-    const service = await createAssetService(rootPath);
+    const { ASSET_CATEGORIES, ASSET_KINDS } = await import('../types.js');
+    const { createLocalFileManifest } = await import('../test/download-fixtures.js');
+    const { manifest } = await createLocalFileManifest('piper-en-binary', rootPath);
+
+    const service = await createAssetService(rootPath, { seedCatalog: false });
+    service.seedCatalog([
+      {
+        id: 'piper-en',
+        name: 'Piper English',
+        kind: ASSET_KINDS.MODEL,
+        category: ASSET_CATEGORIES.SPEECH,
+        version: '1.0.0',
+        manifest,
+      },
+    ]);
 
     await service.downloadAsset('piper-en');
     const deleted = await service.deleteAsset('piper-en');

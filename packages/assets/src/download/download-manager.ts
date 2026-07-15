@@ -1,16 +1,27 @@
-import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 import type Database from 'better-sqlite3';
 
 import type { AssetRepository } from '../repository/asset-repository.js';
+import type { AssetDownloadManifest } from './types.js';
 import { ASSET_STATUSES, DOWNLOAD_STATUSES } from '../types.js';
 import type { DownloadRecord } from '../types.js';
+import {
+  atomicRenameVerifiedFile,
+  downloadFromManifestSources,
+  probeManifestTotalBytes,
+  resolveResumeOffset,
+} from './download-executor.js';
+import {
+  createDefaultDownloadProviderRegistry,
+  type DownloadProviderRegistry,
+} from './download-provider-registry.js';
 
 export interface DownloadManagerOptions {
   readonly binariesRoot: string;
-  readonly chunkSizeBytes?: number;
+  readonly providerRegistry?: DownloadProviderRegistry;
 }
 
 interface DownloadRow {
@@ -18,6 +29,7 @@ interface DownloadRow {
   readonly assetId: string;
   readonly targetVersion: string;
   readonly targetPath: string;
+  readonly tempPath: string;
   readonly bytesDownloaded: number;
   readonly totalBytes: number | null;
   readonly status: string;
@@ -27,12 +39,15 @@ interface DownloadRow {
   readonly completedAt: string | null;
 }
 
+const PART_FILE_SUFFIX = '.part';
+
 function mapDownloadRow(row: DownloadRow): DownloadRecord {
   return {
     id: row.id,
     assetId: row.assetId,
     targetVersion: row.targetVersion,
     targetPath: row.targetPath,
+    tempPath: row.tempPath,
     bytesDownloaded: row.bytesDownloaded,
     totalBytes: row.totalBytes,
     status: row.status as DownloadRecord['status'],
@@ -43,22 +58,6 @@ function mapDownloadRow(row: DownloadRow): DownloadRecord {
   };
 }
 
-export interface DownloadContentProvider {
-  getContent(assetId: string, version: string): Promise<Buffer>;
-  getTotalBytes(assetId: string, version: string): Promise<number>;
-}
-
-export class SimulatedDownloadContentProvider implements DownloadContentProvider {
-  getContent(assetId: string, version: string): Promise<Buffer> {
-    const payload = `dubforge-asset:${assetId}:${version}`;
-    return Promise.resolve(Buffer.from(payload, 'utf8'));
-  }
-
-  getTotalBytes(assetId: string, version: string): Promise<number> {
-    return this.getContent(assetId, version).then((content) => content.byteLength);
-  }
-}
-
 export class DownloadManager {
   private readonly insertDownload: Database.Statement;
   private readonly updateDownloadProgress: Database.Statement;
@@ -66,22 +65,22 @@ export class DownloadManager {
   private readonly selectDownloadById: Database.Statement;
   private readonly selectDownloadsByAsset: Database.Statement;
   private readonly selectActiveDownloads: Database.Statement;
-  private readonly chunkSizeBytes: number;
+  private readonly providerRegistry: DownloadProviderRegistry;
+  private readonly activeControllers = new Map<string, AbortController>();
 
   constructor(
     private readonly db: Database.Database,
     private readonly repository: AssetRepository,
     private readonly options: DownloadManagerOptions,
-    private readonly contentProvider: DownloadContentProvider = new SimulatedDownloadContentProvider(),
   ) {
-    this.chunkSizeBytes = options.chunkSizeBytes ?? 4096;
+    this.providerRegistry = options.providerRegistry ?? createDefaultDownloadProviderRegistry();
 
     this.insertDownload = db.prepare(`
       INSERT INTO downloads (
-        id, asset_id, target_version, target_path, bytes_downloaded, total_bytes,
+        id, asset_id, target_version, target_path, temp_path, bytes_downloaded, total_bytes,
         status, error_message, started_at, updated_at, completed_at
       ) VALUES (
-        @id, @assetId, @targetVersion, @targetPath, @bytesDownloaded, @totalBytes,
+        @id, @assetId, @targetVersion, @targetPath, @tempPath, @bytesDownloaded, @totalBytes,
         @status, @errorMessage, @startedAt, @updatedAt, @completedAt
       )
     `);
@@ -106,8 +105,8 @@ export class DownloadManager {
     this.selectDownloadById = db.prepare(`
       SELECT
         id, asset_id AS assetId, target_version AS targetVersion, target_path AS targetPath,
-        bytes_downloaded AS bytesDownloaded, total_bytes AS totalBytes, status,
-        error_message AS errorMessage, started_at AS startedAt, updated_at AS updatedAt,
+        temp_path AS tempPath, bytes_downloaded AS bytesDownloaded, total_bytes AS totalBytes,
+        status, error_message AS errorMessage, started_at AS startedAt, updated_at AS updatedAt,
         completed_at AS completedAt
       FROM downloads WHERE id = ?
     `);
@@ -115,8 +114,8 @@ export class DownloadManager {
     this.selectDownloadsByAsset = db.prepare(`
       SELECT
         id, asset_id AS assetId, target_version AS targetVersion, target_path AS targetPath,
-        bytes_downloaded AS bytesDownloaded, total_bytes AS totalBytes, status,
-        error_message AS errorMessage, started_at AS startedAt, updated_at AS updatedAt,
+        temp_path AS tempPath, bytes_downloaded AS bytesDownloaded, total_bytes AS totalBytes,
+        status, error_message AS errorMessage, started_at AS startedAt, updated_at AS updatedAt,
         completed_at AS completedAt
       FROM downloads WHERE asset_id = ? ORDER BY started_at DESC
     `);
@@ -124,8 +123,8 @@ export class DownloadManager {
     this.selectActiveDownloads = db.prepare(`
       SELECT
         id, asset_id AS assetId, target_version AS targetVersion, target_path AS targetPath,
-        bytes_downloaded AS bytesDownloaded, total_bytes AS totalBytes, status,
-        error_message AS errorMessage, started_at AS startedAt, updated_at AS updatedAt,
+        temp_path AS tempPath, bytes_downloaded AS bytesDownloaded, total_bytes AS totalBytes,
+        status, error_message AS errorMessage, started_at AS startedAt, updated_at AS updatedAt,
         completed_at AS completedAt
       FROM downloads
       WHERE status IN ('queued', 'downloading', 'verifying')
@@ -133,23 +132,33 @@ export class DownloadManager {
     `);
   }
 
-  getBinaryPath(assetId: string, version: string): string {
-    return join(this.options.binariesRoot, assetId, version, 'asset.bin');
+  getBinaryPath(assetId: string, version: string, filename: string): string {
+    return join(this.options.binariesRoot, assetId, version, filename);
   }
 
-  enqueueDownload(assetId: string, targetVersion: string): Promise<DownloadRecord> {
+  private getTempPath(finalPath: string): string {
+    return `${finalPath}${PART_FILE_SUFFIX}`;
+  }
+
+  enqueueDownload(
+    assetId: string,
+    targetVersion: string,
+    manifest: AssetDownloadManifest,
+  ): Promise<DownloadRecord> {
     const asset = this.repository.getAssetById(assetId);
     if (asset === null) {
       throw new Error(`Asset not found: ${assetId}`);
     }
 
-    const targetPath = this.getBinaryPath(assetId, targetVersion);
+    const targetPath = this.getBinaryPath(assetId, targetVersion, manifest.filename);
+    const tempPath = this.getTempPath(targetPath);
     const now = new Date().toISOString();
     const download: DownloadRecord = {
       id: randomUUID(),
       assetId,
       targetVersion,
       targetPath,
+      tempPath,
       bytesDownloaded: 0,
       totalBytes: null,
       status: DOWNLOAD_STATUSES.QUEUED,
@@ -165,6 +174,7 @@ export class DownloadManager {
         assetId: download.assetId,
         targetVersion: download.targetVersion,
         targetPath: download.targetPath,
+        tempPath: download.tempPath,
         bytesDownloaded: download.bytesDownloaded,
         totalBytes: download.totalBytes,
         status: download.status,
@@ -181,7 +191,10 @@ export class DownloadManager {
     return Promise.resolve(download);
   }
 
-  async startDownload(downloadId: string): Promise<DownloadRecord> {
+  async startDownload(
+    downloadId: string,
+    manifest: AssetDownloadManifest,
+  ): Promise<DownloadRecord> {
     const download = this.getDownloadById(downloadId);
     if (download === null) {
       throw new Error(`Download not found: ${downloadId}`);
@@ -194,6 +207,9 @@ export class DownloadManager {
       throw new Error(`Download cannot be started in status: ${download.status}`);
     }
 
+    const controller = new AbortController();
+    this.activeControllers.set(downloadId, controller);
+
     const now = new Date().toISOString();
     this.updateDownloadStatus.run({
       id: downloadId,
@@ -204,27 +220,39 @@ export class DownloadManager {
     });
 
     try {
-      const content = await this.contentProvider.getContent(
-        download.assetId,
-        download.targetVersion,
-      );
-      const totalBytes = content.byteLength;
       await mkdir(dirname(download.targetPath), { recursive: true });
 
-      let bytesDownloaded = 0;
-      while (bytesDownloaded < totalBytes) {
-        const chunkEnd = Math.min(bytesDownloaded + this.chunkSizeBytes, totalBytes);
-        const chunk = content.subarray(bytesDownloaded, chunkEnd);
-        await writeFile(download.targetPath, chunk, { flag: bytesDownloaded === 0 ? 'w' : 'a' });
-        bytesDownloaded = chunkEnd;
+      const resumeFromByte = await resolveResumeOffset(download.tempPath);
+      const probedTotalBytes = await probeManifestTotalBytes(
+        manifest.sources,
+        this.providerRegistry,
+      );
 
+      if (resumeFromByte > 0) {
         this.updateDownloadProgress.run({
           id: downloadId,
-          bytesDownloaded,
-          totalBytes,
+          bytesDownloaded: resumeFromByte,
+          totalBytes: probedTotalBytes,
           updatedAt: new Date().toISOString(),
         });
       }
+
+      await downloadFromManifestSources({
+        manifest,
+        registry: this.providerRegistry,
+        tempPath: download.tempPath,
+        assetId: download.assetId,
+        version: download.targetVersion,
+        signal: controller.signal,
+        onProgress: (bytesDownloaded, totalBytes) => {
+          this.updateDownloadProgress.run({
+            id: downloadId,
+            bytesDownloaded,
+            totalBytes,
+            updatedAt: new Date().toISOString(),
+          });
+        },
+      });
 
       const verifyingAt = new Date().toISOString();
       this.updateDownloadStatus.run({
@@ -235,9 +263,15 @@ export class DownloadManager {
         completedAt: null,
       });
 
-      const checksum = createHash('sha256').update(content).digest('hex');
-      const completedAt = new Date().toISOString();
+      const asset = this.repository.getAssetById(download.assetId);
+      const expectedChecksum = manifest.checksum ?? asset?.checksum ?? null;
+      const verified = await atomicRenameVerifiedFile(
+        download.tempPath,
+        download.targetPath,
+        expectedChecksum,
+      );
 
+      const completedAt = new Date().toISOString();
       const complete = this.db.transaction(() => {
         this.updateDownloadStatus.run({
           id: downloadId,
@@ -249,15 +283,15 @@ export class DownloadManager {
 
         this.repository.addVersion(download.assetId, download.targetVersion, {
           filePath: download.targetPath,
-          checksum,
-          sizeBytes: totalBytes,
+          checksum: verified.checksum,
+          sizeBytes: verified.sizeBytes,
           activate: true,
         });
 
         this.repository.updateAssetMetadata(download.assetId, {
           filePath: download.targetPath,
-          checksum,
-          sizeBytes: totalBytes,
+          checksum: verified.checksum,
+          sizeBytes: verified.sizeBytes,
           status: ASSET_STATUSES.READY,
           version: download.targetVersion,
         });
@@ -276,6 +310,8 @@ export class DownloadManager {
       });
       this.repository.updateAssetMetadata(download.assetId, { status: ASSET_STATUSES.MISSING });
       throw error;
+    } finally {
+      this.activeControllers.delete(downloadId);
     }
 
     const completed = this.getDownloadById(downloadId);
@@ -291,6 +327,9 @@ export class DownloadManager {
     if (download === null) {
       throw new Error(`Download not found: ${downloadId}`);
     }
+
+    const controller = this.activeControllers.get(downloadId);
+    controller?.abort(new Error('Download cancelled'));
 
     const cancelledAt = new Date().toISOString();
     this.updateDownloadStatus.run({

@@ -101,7 +101,7 @@ export async function createAssetPlatform(options: AssetPlatformOptions): Promis
   return platform;
 }
 
-export function enqueueBackgroundDownload(
+export async function enqueueBackgroundDownload(
   service: AssetService,
   assetId: string,
   targetVersion?: string,
@@ -113,9 +113,10 @@ export function enqueueBackgroundDownload(
   }
 
   const version = targetVersion ?? asset.version;
+  const repository = service.getRepository();
+  const manifest = repository.requireManifest(assetId);
   const downloadManager = service.getDownloadManager();
-  return downloadManager.enqueueDownload(assetId, version).then((download) => {
-    void downloadManager.startDownload(download.id).catch(() => undefined);
-    return download;
-  });
+  const download = await downloadManager.enqueueDownload(assetId, version, manifest);
+  void downloadManager.startDownload(download.id, manifest).catch(() => undefined);
+  return download;
 }

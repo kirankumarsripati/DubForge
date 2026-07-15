@@ -10,6 +10,8 @@ import type {
   CreateAssetInput,
   UpdateAssetMetadataInput,
 } from '../types.js';
+import { assetManifestSchema } from '../discovery/catalog-schema.js';
+import type { AssetDownloadManifest } from '../download/types.js';
 
 interface AssetRow {
   readonly id: string;
@@ -101,15 +103,17 @@ export class AssetRepository {
   private readonly selectDependencies: Database.Statement;
   private readonly selectDependents: Database.Statement;
   private readonly deleteDependency: Database.Statement;
+  private readonly selectManifest: Database.Statement;
+  private readonly upsertManifestStatement: Database.Statement;
 
   constructor(private readonly db: Database.Database) {
     this.insertAsset = db.prepare(`
       INSERT INTO assets (
         id, name, kind, category, version, file_path, checksum, size_bytes,
-        status, source_url, created_at, updated_at
+        status, source_url, manifest_json, created_at, updated_at
       ) VALUES (
         @id, @name, @kind, @category, @version, @filePath, @checksum, @sizeBytes,
-        @status, @sourceUrl, @createdAt, @updatedAt
+        @status, @sourceUrl, @manifestJson, @createdAt, @updatedAt
       )
     `);
 
@@ -214,6 +218,13 @@ export class AssetRepository {
     `);
 
     this.deleteDependency = db.prepare('DELETE FROM asset_dependencies WHERE id = ?');
+
+    this.selectManifest = db.prepare(
+      'SELECT manifest_json AS manifestJson FROM assets WHERE id = ?',
+    );
+    this.upsertManifestStatement = db.prepare(`
+      UPDATE assets SET manifest_json = @manifestJson, updated_at = @updatedAt WHERE id = @id
+    `);
   }
 
   createAsset(input: CreateAssetInput): AssetRecord {
@@ -244,11 +255,52 @@ export class AssetRepository {
       sizeBytes: record.sizeBytes,
       status: record.status,
       sourceUrl: record.sourceUrl,
+      manifestJson:
+        input.manifest === undefined || input.manifest === null
+          ? null
+          : JSON.stringify(input.manifest),
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     });
 
     return record;
+  }
+
+  upsertManifest(assetId: string, manifest: AssetDownloadManifest): void {
+    const existing = this.getAssetById(assetId);
+    if (existing === null) {
+      throw new Error(`Asset not found: ${assetId}`);
+    }
+
+    const validated = assetManifestSchema.parse(manifest);
+    this.upsertManifestStatement.run({
+      id: assetId,
+      manifestJson: JSON.stringify(validated),
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  getManifest(assetId: string): AssetDownloadManifest | null {
+    const row = this.selectManifest.get(assetId) as { manifestJson: string | null } | undefined;
+    if (row?.manifestJson == null) {
+      return null;
+    }
+
+    const parsed = assetManifestSchema.parse(JSON.parse(row.manifestJson));
+    return {
+      sources: parsed.sources,
+      checksum: parsed.checksum ?? null,
+      filename: parsed.filename,
+    };
+  }
+
+  requireManifest(assetId: string): AssetDownloadManifest {
+    const manifest = this.getManifest(assetId);
+    if (manifest === null) {
+      throw new Error(`Asset ${assetId} does not have a download manifest`);
+    }
+
+    return manifest;
   }
 
   updateAssetMetadata(assetId: string, input: UpdateAssetMetadataInput): AssetRecord {

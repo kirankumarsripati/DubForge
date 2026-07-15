@@ -83,6 +83,7 @@ export interface DownloadRecord {
   readonly assetId: string;
   readonly targetVersion: string;
   readonly targetPath: string;
+  readonly tempPath: string;
   readonly bytesDownloaded: number;
   readonly totalBytes: number | null;
   readonly status: DownloadStatus;
@@ -99,6 +100,7 @@ export interface CreateAssetInput {
   readonly category: AssetCategory;
   readonly version: string;
   readonly sourceUrl?: string | null;
+  readonly manifest?: import('./download/types.js').AssetDownloadManifest | null;
 }
 
 export interface UpdateAssetMetadataInput {

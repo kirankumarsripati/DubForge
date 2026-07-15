@@ -85,6 +85,8 @@ export class AssetService {
           const existing = this.repository.getAssetById(entry.id);
           if (existing === null) {
             this.repository.createAsset(entry);
+          } else if (entry.manifest !== undefined && entry.manifest !== null) {
+            this.repository.upsertManifest(entry.id, entry.manifest);
           }
         }
 
@@ -126,8 +128,9 @@ export class AssetService {
     }
 
     const version = targetVersion ?? asset.version;
-    const download = await this.downloadManager.enqueueDownload(assetId, version);
-    return this.downloadManager.startDownload(download.id);
+    const manifest = this.repository.requireManifest(assetId);
+    const download = await this.downloadManager.enqueueDownload(assetId, version, manifest);
+    return this.downloadManager.startDownload(download.id, manifest);
   }
 
   async downloadAssetInBackground(
@@ -142,8 +145,9 @@ export class AssetService {
     }
 
     const version = targetVersion ?? asset.version;
-    const download = await this.downloadManager.enqueueDownload(assetId, version);
-    void this.downloadManager.startDownload(download.id).catch(() => undefined);
+    const manifest = this.repository.requireManifest(assetId);
+    const download = await this.downloadManager.enqueueDownload(assetId, version, manifest);
+    void this.downloadManager.startDownload(download.id, manifest).catch(() => undefined);
     return download;
   }
 
