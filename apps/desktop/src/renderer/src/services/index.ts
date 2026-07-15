@@ -4,6 +4,7 @@ export {
   modelService,
   pipelineService,
   settingsService,
+  videoService,
   MOCK_APP_INFO,
   MOCK_DEFAULT_SETTINGS,
   MOCK_JOBS,

@@ -1,7 +1,15 @@
 import { app, BrowserWindow, shell } from 'electron';
 import { join } from 'node:path';
+import { createApplicationContainer } from './container';
+import {
+  registerPrivilegedSchemes,
+  registerThumbnailProtocol,
+  registerVideoIpcHandlers,
+} from './ipc/video-handlers';
 
 const isDev = !app.isPackaged;
+
+registerPrivilegedSchemes();
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -39,6 +47,11 @@ function createWindow(): void {
 
 void app.whenReady().then(() => {
   app.setName('DubForge');
+
+  const container = createApplicationContainer();
+  registerThumbnailProtocol(container);
+  registerVideoIpcHandlers(container);
+
   createWindow();
 
   app.on('activate', () => {

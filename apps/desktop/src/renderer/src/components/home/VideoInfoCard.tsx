@@ -24,8 +24,16 @@ export function VideoInfoCard({
       </CardHeader>
       <CardContent>
         <div className="flex gap-4">
-          <div className="bg-muted flex size-20 shrink-0 items-center justify-center rounded-xl">
-            <Film className="text-muted-foreground size-8" aria-hidden="true" />
+          <div className="bg-muted flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl">
+            {video.thumbnailUrl ? (
+              <img
+                src={video.thumbnailUrl}
+                alt={`Thumbnail for ${video.filename}`}
+                className="size-full object-cover"
+              />
+            ) : (
+              <Film className="text-muted-foreground size-8" aria-hidden="true" />
+            )}
           </div>
           <dl className="grid flex-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
             <div>
@@ -43,6 +51,18 @@ export function VideoInfoCard({
             <div>
               <dt className="text-muted-foreground">Codec</dt>
               <dd className="font-medium">{video.codec}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Frame Rate</dt>
+              <dd className="font-medium">
+                {video.frameRate > 0 ? `${video.frameRate.toFixed(2)} fps` : 'Unknown'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Bitrate</dt>
+              <dd className="font-medium">
+                {video.bitrateKbps > 0 ? `${String(video.bitrateKbps)} kbps` : 'Unknown'}
+              </dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Audio Tracks</dt>

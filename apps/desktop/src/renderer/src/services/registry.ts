@@ -4,18 +4,27 @@ import type {
   ModelService,
   PipelineService,
   SettingsService,
+  VideoService,
 } from '@dubforge/types';
+import { ipcVideoService } from './ipc/ipc-video-service';
 import { mockAppService } from './mock/mock-app-service';
 import { mockJobService } from './mock/mock-job-service';
 import { mockModelService } from './mock/mock-model-service';
 import { mockPipelineService } from './mock/mock-pipeline-service';
 import { mockSettingsService } from './mock/mock-settings-service';
+import { mockVideoService } from './mock/mock-video-service';
+
+function hasVideoBridge(): boolean {
+  const api = window.dubforge;
+  return api !== undefined && 'video' in api;
+}
 
 export const appService: AppService = mockAppService;
 export const jobService: JobService = mockJobService;
 export const modelService: ModelService = mockModelService;
 export const pipelineService: PipelineService = mockPipelineService;
 export const settingsService: SettingsService = mockSettingsService;
+export const videoService: VideoService = hasVideoBridge() ? ipcVideoService : mockVideoService;
 
 export {
   MOCK_APP_INFO,

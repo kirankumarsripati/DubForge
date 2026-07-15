@@ -5,6 +5,7 @@ import { ImportCard } from '../components/home/ImportCard';
 import { LocalizationCard } from '../components/home/LocalizationCard';
 import { OutputOptionsCard } from '../components/home/OutputOptionsCard';
 import { ProfileCard } from '../components/home/ProfileCard';
+import { RecentFilesCard } from '../components/home/RecentFilesCard';
 import { VideoInfoCard } from '../components/home/VideoInfoCard';
 import { PageHeader } from '../components/layout/PageHeader';
 import { pipelineService } from '../services';
@@ -19,18 +20,38 @@ export function HomePage(): React.JSX.Element {
   const activeJob = useHomeStore((state) => state.activeJob);
   const isStarting = useHomeStore((state) => state.isStarting);
   const startError = useHomeStore((state) => state.startError);
+  const importError = useHomeStore((state) => state.importError);
+  const recentFiles = useHomeStore((state) => state.recentFiles);
   const selectVideo = useHomeStore((state) => state.selectVideo);
+  const openRecentFile = useHomeStore((state) => state.openRecentFile);
   const clearVideo = useHomeStore((state) => state.clearVideo);
+  const clearImportError = useHomeStore((state) => state.clearImportError);
   const toggleLanguage = useHomeStore((state) => state.toggleLanguage);
   const setProfile = useHomeStore((state) => state.setProfile);
   const setOutput = useHomeStore((state) => state.setOutput);
   const startLocalization = useHomeStore((state) => state.startLocalization);
   const fetchActiveJob = useHomeStore((state) => state.fetchActiveJob);
+  const fetchRecentFiles = useHomeStore((state) => state.fetchRecentFiles);
   const settings = useSettingsStore((state) => state.settings.data);
 
   useEffect(() => {
     void fetchActiveJob();
-  }, [fetchActiveJob]);
+    void fetchRecentFiles();
+  }, [fetchActiveJob, fetchRecentFiles]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'o') {
+        event.preventDefault();
+        void selectVideo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectVideo]);
 
   const outputDirectory = settings?.outputDirectory ?? '~/Movies/DubForge';
   const enabledCount = languages.filter((lang) => lang.enabled).length;
@@ -49,6 +70,20 @@ export function HomePage(): React.JSX.Element {
               job={activeJob}
               onCancel={() => {
                 void pipelineService.cancelJob(activeJob.id).then(() => fetchActiveJob());
+              }}
+            />
+          </div>
+        ) : null}
+
+        {importError ? (
+          <div className="mb-6">
+            <ErrorState
+              title={importError.title}
+              description={importError.description}
+              recoveryAction={importError.recoveryAction}
+              onRetry={() => {
+                clearImportError();
+                void selectVideo();
               }}
             />
           </div>
@@ -100,16 +135,14 @@ export function HomePage(): React.JSX.Element {
               </div>
             </div>
           </div>
-        ) : null}
-
-        {!selectedVideo && !activeJob ? (
-          <p className="text-muted-foreground mt-6 text-center text-sm">
-            <button type="button" className="text-primary hover:underline" onClick={selectVideo}>
-              Load sample video
-            </button>{' '}
-            to explore the localization workflow.
-          </p>
-        ) : null}
+        ) : (
+          <RecentFilesCard
+            files={recentFiles}
+            onOpen={(id) => {
+              void openRecentFile(id);
+            }}
+          />
+        )}
       </div>
     </div>
   );

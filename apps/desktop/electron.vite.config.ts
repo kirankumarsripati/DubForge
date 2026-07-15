@@ -5,7 +5,16 @@ import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()],
+    plugins: [
+      externalizeDepsPlugin({
+        exclude: ['@dubforge/shared'],
+      }),
+    ],
+    resolve: {
+      alias: {
+        '@dubforge/shared': resolve(__dirname, '../../packages/shared/src'),
+      },
+    },
     build: {
       rollupOptions: {
         input: {
@@ -18,7 +27,16 @@ export default defineConfig({
     },
   },
   preload: {
-    plugins: [externalizeDepsPlugin()],
+    plugins: [
+      externalizeDepsPlugin({
+        exclude: ['@dubforge/shared'],
+      }),
+    ],
+    resolve: {
+      alias: {
+        '@dubforge/shared': resolve(__dirname, '../../packages/shared/src'),
+      },
+    },
     build: {
       rollupOptions: {
         input: {
@@ -35,6 +53,7 @@ export default defineConfig({
     resolve: {
       alias: {
         '@': resolve(__dirname, 'src/renderer/src'),
+        '@dubforge/shared': resolve(__dirname, '../../packages/shared/src'),
         '@dubforge/ui': resolve(__dirname, '../../packages/ui/src'),
       },
     },

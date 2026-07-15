@@ -1,8 +1,8 @@
-import type { DubForgeApi } from '../../../preload/index';
+import type { DubForgeApi } from '@dubforge/shared';
 
 declare global {
   interface Window {
-    dubforge: DubForgeApi;
+    dubforge?: DubForgeApi;
   }
 }
 

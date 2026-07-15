@@ -9,6 +9,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/renderer/src/*"],
+      "@dubforge/shared": ["../../packages/shared/src"],
       "@dubforge/types": ["../../packages/types/src"],
       "@dubforge/ui": ["../../packages/ui/src"],
       "@dubforge/ui/*": ["../../packages/ui/src/*"]

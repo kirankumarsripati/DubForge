@@ -15,6 +15,7 @@
     "package": "electron-vite build && electron-builder --mac"
   },
   "dependencies": {
+    "@dubforge/shared": "workspace:*",
     "@dubforge/types": "workspace:*",
     "@dubforge/ui": "workspace:*",
     "framer-motion": "^12.16.0",

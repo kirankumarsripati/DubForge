@@ -74,13 +74,30 @@ export interface AppSettings {
 }
 
 export interface VideoMetadata {
+  readonly id: string;
   readonly filename: string;
   readonly durationSeconds: number;
   readonly resolution: string;
   readonly codec: string;
   readonly audioTracks: number;
   readonly fileSizeBytes: number;
+  readonly frameRate: number;
+  readonly bitrateKbps: number;
   readonly thumbnailUrl: string | null;
+}
+
+export interface RecentVideoFile {
+  readonly id: string;
+  readonly filename: string;
+  readonly importedAt: string;
+  readonly durationSeconds: number;
+  readonly thumbnailUrl: string | null;
+}
+
+export interface VideoImportError {
+  readonly title: string;
+  readonly description: string;
+  readonly recoveryAction: string;
 }
 
 export interface LocalizationLanguage {
@@ -146,4 +163,11 @@ export interface PipelineService {
 
 export interface AppService {
   getAppInfo(): Promise<AppInfo>;
+}
+
+export interface VideoService {
+  selectFile(): Promise<VideoMetadata | null>;
+  inspectFile(filePath: string): Promise<VideoMetadata>;
+  listRecentFiles(): Promise<readonly RecentVideoFile[]>;
+  openRecentFile(id: string): Promise<VideoMetadata>;
 }

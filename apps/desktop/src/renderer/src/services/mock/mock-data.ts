@@ -31,12 +31,15 @@ export const MOCK_DEFAULT_SETTINGS: AppSettings = {
 };
 
 export const MOCK_SAMPLE_VIDEO: VideoMetadata = {
+  id: 'mock-sample-video',
   filename: 'morning-yoga-flow.mp4',
   durationSeconds: 3720,
   resolution: '1920×1080',
   codec: 'H.264',
   audioTracks: 1,
   fileSizeBytes: 1_458_000_000,
+  frameRate: 29.97,
+  bitrateKbps: 3200,
   thumbnailUrl: null,
 };
 
