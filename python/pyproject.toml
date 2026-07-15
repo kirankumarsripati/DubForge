@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=75.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dubforge-python"
+version = "0.1.0"
+description = "DubForge Python worker workspace"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+
+[project.optional-dependencies]
+dev = [
+    "black>=25.1.0",
+    "mypy>=1.16.0",
+    "pytest>=8.4.0",
+    "ruff>=0.11.12",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["workers*", "providers*", "utils*", "models*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+include = '\.pyi?$'
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["workers", "providers", "utils", "models"]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+    "B",
+    "SIM",
+    "TCH",
+]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["workers", "providers", "utils", "models"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+no_implicit_optional = true
+check_untyped_defs = true
+files = ["workers", "providers", "utils", "models"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

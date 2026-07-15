@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+
+ignoredBuiltDependencies:
+  - electron-winstaller
+  - esbuild
+
+onlyBuiltDependencies:
+  - electron

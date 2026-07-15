@@ -1,0 +1,33 @@
+Metadata-Version: 2.4
+Name: dubforge-python
+Version: 0.1.0
+Summary: DubForge Python worker workspace
+License: MIT
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Provides-Extra: dev
+Requires-Dist: black>=25.1.0; extra == "dev"
+Requires-Dist: mypy>=1.16.0; extra == "dev"
+Requires-Dist: pytest>=8.4.0; extra == "dev"
+Requires-Dist: ruff>=0.11.12; extra == "dev"
+
+# DubForge Python Workspace
+
+Python worker packages for AI inference. Workers are not yet implemented.
+
+## Setup
+
+```bash
+cd python
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+## Lint
+
+```bash
+ruff check .
+black --check .
+mypy .
+```

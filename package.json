@@ -1,0 +1,55 @@
+{
+  "name": "dubforge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Offline-first AI-powered desktop application for translating, dubbing and localizing videos",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "packageManager": "pnpm@10.12.1",
+  "scripts": {
+    "dev": "pnpm --filter @dubforge/desktop dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint && pnpm lint:python",
+    "lint:python": "cd python && .venv/bin/python -m ruff check . && .venv/bin/python -m black --check . && .venv/bin/python -m mypy .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test && pnpm test:python",
+    "test:python": "cd python && .venv/bin/python -m pytest",
+    "test:e2e": "pnpm --filter @dubforge/desktop test:e2e",
+    "format": "prettier --write . && cd python && .venv/bin/python -m black . && .venv/bin/python -m ruff check --fix .",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "eslint": "^9.28.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.0",
+    "prettier": "^3.5.3",
+    "prettier-plugin-tailwindcss": "^0.6.12",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.34.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild",
+      "electron-winstaller"
+    ]
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md,css}": [
+      "prettier --write"
+    ],
+    "python/**/*.py": [
+      "bash -c 'cd python && .venv/bin/python -m black \"$@\"' --",
+      "bash -c 'cd python && .venv/bin/python -m ruff check --fix \"$@\"' --"
+    ]
+  }
+}

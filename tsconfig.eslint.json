@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "types": ["node", "vitest/globals"],
+    "baseUrl": ".",
+    "paths": {
+      "@dubforge/types": ["packages/types/src/index.ts"],
+      "@dubforge/shared": ["packages/shared/src/index.ts"],
+      "@dubforge/pipeline": ["packages/pipeline/src/index.ts"],
+      "@dubforge/providers": ["packages/providers/src/index.ts"],
+      "@dubforge/ui": ["packages/ui/src/index.ts"],
+      "@dubforge/ui/*": ["packages/ui/src/*"]
+    }
+  },
+  "include": [
+    "apps/**/*.ts",
+    "apps/**/*.tsx",
+    "packages/**/*.ts",
+    "packages/**/*.tsx",
+    "tests/**/*.ts"
+  ]
+}
