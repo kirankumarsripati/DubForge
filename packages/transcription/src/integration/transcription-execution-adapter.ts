@@ -25,7 +25,6 @@ export class TranscriptionExecutionAdapter implements ExecutionAdapter {
 export const TRANSCRIPTION_NODE_KINDS: readonly NodeKind[] = [
   NODE_KINDS.SPEECH_RECOGNITION,
   NODE_KINDS.ENGLISH_TRANSCRIPT,
-  NODE_KINDS.TRANSLATE,
 ];
 
 export function isTranscriptionNodeKind(nodeKind: NodeKind): boolean {

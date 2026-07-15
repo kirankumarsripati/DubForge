@@ -1,0 +1,12 @@
+{
+  "segments": [
+    {
+      "segmentId": "seg-hello",
+      "text": "नमस्ते दुनिया।"
+    },
+    {
+      "segmentId": "seg-golden",
+      "text": "यह एक स्वर्णिम प्रतिलेख है।"
+    }
+  ]
+}

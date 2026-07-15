@@ -7,9 +7,11 @@ import { createObservabilityPlatform } from '@dubforge/platform-observability';
 import { createResourcePlatform } from '@dubforge/platform-resource';
 import { createMediaPlatform } from '@dubforge/media';
 import {
-  createTranscriptionPlatform,
+  createLocalizationPlatform,
   createPlatformAdapterRegistry,
-} from '@dubforge/transcription';
+  createTranscriptReaderFromRepository,
+} from '@dubforge/localization';
+import { createTranscriptionPlatform } from '@dubforge/transcription';
 import type { ExtensionRuntime } from '@dubforge/providers';
 import {
   PipelineEngine,
@@ -26,6 +28,7 @@ export interface PlatformStack {
   readonly artifactPlatform: ReturnType<typeof createArtifactPlatform<WorkflowState>>;
   readonly mediaPlatform: ReturnType<typeof createMediaPlatform>;
   readonly transcriptionPlatform: ReturnType<typeof createTranscriptionPlatform>;
+  readonly localizationPlatform: ReturnType<typeof createLocalizationPlatform>;
   readonly observabilityPlatform: ReturnType<typeof createObservabilityPlatform>;
   readonly resourcePlatform: ReturnType<typeof createResourcePlatform>;
   dispose(): void;
@@ -39,6 +42,7 @@ export interface PlatformStackOptions {
   readonly extensionRuntime?: ExtensionRuntime;
   readonly useFixtureMediaAdapters?: boolean;
   readonly useFixtureTranscriptionAdapters?: boolean;
+  readonly useFixtureLocalizationAdapters?: boolean;
 }
 
 export function createPlatformStack(options: PlatformStackOptions): PlatformStack {
@@ -73,9 +77,19 @@ export function createPlatformStack(options: PlatformStackOptions): PlatformStac
     useFixtureAdapters: options.useFixtureTranscriptionAdapters,
   });
 
+  const localizationPlatform = createLocalizationPlatform({
+    rootPath: join(options.rootPath, 'localization'),
+    eventBus,
+    artifactSink: artifactPlatform.getArtifactSink(),
+    extensionRuntime: options.extensionRuntime,
+    useFixtureAdapters: options.useFixtureLocalizationAdapters,
+    transcriptReader: createTranscriptReaderFromRepository(transcriptionPlatform.repository),
+  });
+
   const adapterRegistry = createPlatformAdapterRegistry({
     mediaExecutionAdapter: mediaPlatform.createExecutionAdapter(),
     transcriptionExecutionAdapter: transcriptionPlatform.createExecutionAdapter(),
+    localizationExecutionAdapter: localizationPlatform.createExecutionAdapter(),
   });
 
   const executionPlatform = createExecutionPlatform({
@@ -102,10 +116,12 @@ export function createPlatformStack(options: PlatformStackOptions): PlatformStac
     artifactPlatform,
     mediaPlatform,
     transcriptionPlatform,
+    localizationPlatform,
     observabilityPlatform,
     resourcePlatform,
     dispose(): void {
       observabilityPlatform.dispose();
+      localizationPlatform.close();
       transcriptionPlatform.close();
       mediaPlatform.close();
       artifactPlatform.close();

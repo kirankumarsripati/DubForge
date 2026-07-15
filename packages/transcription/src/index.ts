@@ -36,8 +36,6 @@ export type {
   RecognizeSpeechInput,
   RecognizeSpeechResult,
   RecognizeSpeechPort,
-  TranslateTranscriptInput,
-  TranslateTranscriptPort,
 } from './ports/transcription-ports.js';
 
 export { LocalizationRepository } from './repository/localization-repository.js';
@@ -63,7 +61,6 @@ export { TranscriptionApplication } from './application/transcription-applicatio
 export {
   RecognizeSpeechService,
   BuildTranscriptService,
-  TranslateTranscriptService,
 } from './application/transcription-services.js';
 
 export { TranscriptionDiagnostics } from './diagnostics/transcription-diagnostics.js';
@@ -73,7 +70,7 @@ export {
   TRANSCRIPTION_NODE_KINDS,
   isTranscriptionNodeKind,
 } from './integration/transcription-execution-adapter.js';
-export { createPlatformAdapterRegistry } from './integration/adapter-registry.js';
+export { resolveGoldenFixturePath } from './integration/adapter-registry.js';
 
 export {
   createTranscriptionPlatform,

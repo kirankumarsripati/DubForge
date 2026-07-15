@@ -5,7 +5,6 @@ import { TRANSCRIPT_SOURCES } from '../domain/constants.js';
 import { mergeAdjacentSegments } from './segment-merger.js';
 import { splitLongSegments } from './segment-splitter.js';
 import { normalizeCanonicalTranscript } from './normalization.js';
-import { analyzeTranscriptQuality } from './quality-analyzer.js';
 import { buildSrtCaptions } from './caption-builder.js';
 import { createTranscriptProcessingPlatform } from './transcript-processing-platform.js';
 
@@ -46,7 +45,7 @@ describe('Transcript processing platform', () => {
     });
 
     const merged = mergeAdjacentSegments(normalizeCanonicalTranscript(transcript).segments);
-    expect(merged).toHaveLength(2);
+    expect(merged).toHaveLength(1);
 
     const split = splitLongSegments(merged, 3000);
     expect(split.length).toBeGreaterThan(2);

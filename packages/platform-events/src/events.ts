@@ -63,6 +63,17 @@ export const TRANSCRIPTION_EVENTS = {
   QUALITY_ANALYZED: 'transcription.quality-analyzed',
 } as const;
 
+export const LOCALIZATION_EVENTS = {
+  DOCUMENT_LOCALIZED: 'localization.document-localized',
+  OPERATION_STARTED: 'localization.operation-started',
+  OPERATION_COMPLETED: 'localization.operation-completed',
+  OPERATION_FAILED: 'localization.operation-failed',
+  ARTIFACT_PRODUCED: 'localization.artifact-produced',
+  QUALITY_ANALYZED: 'localization.quality-analyzed',
+  MEMORY_HIT: 'localization.memory-hit',
+  GLOSSARY_APPLIED: 'localization.glossary-applied',
+} as const;
+
 export interface DomainEventBase {
   readonly id: string;
   readonly timestamp: string;
@@ -252,6 +263,44 @@ export interface TranscriptionQualityEvent extends DomainEventBase {
   readonly languageCode: string;
 }
 
+export interface LocalizationDocumentEvent extends DomainEventBase {
+  readonly type: typeof LOCALIZATION_EVENTS.DOCUMENT_LOCALIZED;
+  readonly nodeId: string;
+  readonly documentId: string;
+  readonly targetLanguageCode: string;
+  readonly segmentCount: number;
+  readonly artifactPath: string;
+}
+
+export interface LocalizationOperationEvent extends DomainEventBase {
+  readonly type:
+    | typeof LOCALIZATION_EVENTS.OPERATION_STARTED
+    | typeof LOCALIZATION_EVENTS.OPERATION_COMPLETED
+    | typeof LOCALIZATION_EVENTS.OPERATION_FAILED;
+  readonly nodeId: string;
+  readonly operationId: string;
+  readonly operationKind: string;
+  readonly artifactPath?: string;
+  readonly durationMs?: number;
+  readonly message?: string;
+  readonly languageCode: string | null;
+}
+
+export interface LocalizationArtifactProducedEvent extends DomainEventBase {
+  readonly type: typeof LOCALIZATION_EVENTS.ARTIFACT_PRODUCED;
+  readonly nodeId: string;
+  readonly artifactPath: string;
+  readonly operationKind: string;
+  readonly languageCode: string | null;
+}
+
+export interface LocalizationQualityEvent extends DomainEventBase {
+  readonly type: typeof LOCALIZATION_EVENTS.QUALITY_ANALYZED;
+  readonly nodeId: string;
+  readonly score: number;
+  readonly languageCode: string;
+}
+
 export type DomainEvent =
   | WorkflowLifecycleEvent
   | WorkflowStateChangedEvent
@@ -273,7 +322,11 @@ export type DomainEvent =
   | TranscriptionRecognizedEvent
   | TranscriptionOperationEvent
   | TranscriptionArtifactProducedEvent
-  | TranscriptionQualityEvent;
+  | TranscriptionQualityEvent
+  | LocalizationDocumentEvent
+  | LocalizationOperationEvent
+  | LocalizationArtifactProducedEvent
+  | LocalizationQualityEvent;
 
 export type DomainEventType = DomainEvent['type'];
 

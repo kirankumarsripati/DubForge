@@ -7,6 +7,7 @@ export const EXECUTION_ADAPTER_KINDS = {
   NATIVE_BINARY: 'native-binary',
   MEDIA: 'media',
   TRANSCRIPTION: 'transcription',
+  LOCALIZATION: 'localization',
   MOCK: 'mock',
 } as const;
 

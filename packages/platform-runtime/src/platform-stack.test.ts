@@ -24,6 +24,7 @@ describe('PlatformStack', () => {
       maxConcurrency: 2,
       useFixtureMediaAdapters: true,
       useFixtureTranscriptionAdapters: true,
+      useFixtureLocalizationAdapters: true,
     });
 
     const finalState = await stack.engine.start({

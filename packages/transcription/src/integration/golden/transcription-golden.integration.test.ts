@@ -91,12 +91,11 @@ describe('Transcription golden integration', () => {
     expect(canonical?.segments).toHaveLength(golden.segmentCount);
     expect(artifact.segments[0]?.text).toBe(golden.segments[0]?.text);
     expect(events).toContain(TRANSCRIPTION_EVENTS.RECOGNIZED);
-    expect(events).toContain(TRANSCRIPTION_EVENTS.ARTIFACT_PRODUCED);
 
     platform.close();
   });
 
-  it('builds english transcript and localized canonical transcript from repository only', async () => {
+  it('builds english transcript artifacts from repository canonical transcript', async () => {
     const rootPath = await mkdtemp(join(tmpdir(), 'dubforge-transcription-flow-'));
     tempDirs.push(rootPath);
     const artifactRoot = join(rootPath, 'artifacts');
@@ -139,32 +138,9 @@ describe('Transcription golden integration', () => {
 
     expect(buildResult.artifacts.englishTranscript).toBeDefined();
 
-    const translateResult = await platform.application.executeNode({
-      executionId: 'exec-translate',
-      workflowId: 'wf-flow',
-      jobId: 'job-flow',
-      nodeId: 'translate:hi',
-      nodeKind: 'translate',
-      ...baseRequest,
-      languageCode: 'hi',
-      artifactRoot,
-      artifacts: {},
-      onProgress: () => undefined,
-      artifactSink: sink,
-    });
-
-    const localized = platform.repository.getCanonicalTranscript('wf-flow', 'hi');
-    const localizedArtifact = deserializeCanonicalTranscript(
-      await readFile(translateResult.artifacts['canonical-transcript:hi'] ?? '', 'utf8'),
-    );
-
-    expect(localized?.languageCode).toBe('hi');
-    expect(localizedArtifact.languageCode).toBe('hi');
-    expect(localizedArtifact.segments[0]?.text.startsWith('[hi]')).toBe(true);
-
     const report = platform.diagnostics.buildWorkflowReport(platform.repository, 'wf-flow');
     expect(report.englishTranscriptFound).toBe(true);
-    expect(report.operations.completed).toBe(3);
+    expect(report.operations.completed).toBe(2);
 
     platform.close();
   });

@@ -11,24 +11,21 @@ import { TranscriptionApplication } from './application/transcription-applicatio
 import {
   BuildTranscriptService,
   RecognizeSpeechService,
-  TranslateTranscriptService,
 } from './application/transcription-services.js';
 import {
   FasterWhisperAdapter,
   FixtureFasterWhisperAdapter,
 } from './adapters/faster-whisper/faster-whisper-adapter.js';
-import { CanonicalTranslateAdapter } from './adapters/translation/canonical-translate-adapter.js';
 import { TranscriptionDiagnostics } from './diagnostics/transcription-diagnostics.js';
 import { TranscriptionExecutionAdapter } from './integration/transcription-execution-adapter.js';
 import { resolveGoldenFixturePath } from './integration/adapter-registry.js';
-import type { RecognizeSpeechPort, TranslateTranscriptPort } from './ports/transcription-ports.js';
+import type { RecognizeSpeechPort } from './ports/transcription-ports.js';
 import { LocalizationRepository } from './repository/localization-repository.js';
 import { TranscriptionMigrationRunner } from './repository/sqlite/migrations.js';
 import { createTranscriptProcessingPlatform } from './processing/transcript-processing-platform.js';
 
 export interface TranscriptionPlatformPorts {
   readonly recognizePort: RecognizeSpeechPort;
-  readonly translatePort: TranslateTranscriptPort;
 }
 
 export interface TranscriptionPlatformOptions {
@@ -73,8 +70,6 @@ export function createTranscriptionPlatform(
         })
       : new FasterWhisperAdapter());
 
-  const translatePort = options.ports?.translatePort ?? new CanonicalTranslateAdapter();
-
   const recognizeService = new RecognizeSpeechService({
     eventBus: options.eventBus,
     repository,
@@ -91,20 +86,7 @@ export function createTranscriptionPlatform(
     artifactSink: options.artifactSink,
   });
 
-  const translateService = new TranslateTranscriptService({
-    eventBus: options.eventBus,
-    repository,
-    translatePort,
-    processingPlatform,
-    artifactSink: options.artifactSink,
-    extensionRuntime: options.extensionRuntime,
-  });
-
-  const application = new TranscriptionApplication(
-    recognizeService,
-    buildService,
-    translateService,
-  );
+  const application = new TranscriptionApplication(recognizeService, buildService);
 
   return {
     application,

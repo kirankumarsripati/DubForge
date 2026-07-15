@@ -1,6 +1,7 @@
 export {
   ARTIFACT_EVENTS,
   EXECUTION_EVENTS,
+  LOCALIZATION_EVENTS,
   MEDIA_EVENTS,
   TRANSCRIPTION_EVENTS,
   OBSERVABILITY_EVENTS,
@@ -34,6 +35,10 @@ export type {
   TranscriptionOperationEvent,
   TranscriptionArtifactProducedEvent,
   TranscriptionQualityEvent,
+  LocalizationDocumentEvent,
+  LocalizationOperationEvent,
+  LocalizationArtifactProducedEvent,
+  LocalizationQualityEvent,
 } from './events.js';
 
 export { createDomainEventBus, createDomainEventId, type DomainEventBus } from './event-bus.js';

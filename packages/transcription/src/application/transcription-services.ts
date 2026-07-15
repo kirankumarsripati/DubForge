@@ -6,7 +6,7 @@ import { NODE_KINDS } from '@dubforge/types';
 
 import { serializeCanonicalTranscript } from '../domain/canonical-transcript.js';
 import { TRANSCRIPTION_OPERATION_KINDS } from '../domain/constants.js';
-import type { RecognizeSpeechPort, TranslateTranscriptPort } from '../ports/transcription-ports.js';
+import type { RecognizeSpeechPort } from '../ports/transcription-ports.js';
 import { buildCanonicalTranscriptFromSeconds } from '../processing/normalization.js';
 import { buildPlainTranscript, buildSrtCaptions } from '../processing/caption-builder.js';
 import type { TranscriptProcessingPlatform } from '../processing/transcript-processing-platform.js';
@@ -270,115 +270,6 @@ export class BuildTranscriptService {
     } catch (error) {
       const failed = this.options.repository.failOperation(operation.id);
       const message = error instanceof Error ? error.message : 'Transcript build failed.';
-      publishTranscriptionOperationFailed({
-        eventBus: this.options.eventBus,
-        workflowId: input.workflowId,
-        jobId: input.jobId,
-        nodeId: input.nodeId,
-        operation: failed,
-        message,
-      });
-      throw error;
-    }
-  }
-}
-
-export class TranslateTranscriptService {
-  constructor(
-    private readonly options: {
-      readonly eventBus: DomainEventBus;
-      readonly repository: LocalizationRepository;
-      readonly translatePort: TranslateTranscriptPort;
-      readonly processingPlatform: TranscriptProcessingPlatform;
-      readonly artifactSink?: ArtifactSink;
-      readonly extensionRuntime?: ExtensionRuntime;
-    },
-  ) {}
-
-  async translateForWorkflow(input: {
-    readonly workflowId: string;
-    readonly jobId: string;
-    readonly nodeId: string;
-    readonly languageCode: string | null;
-    readonly artifactRoot: string;
-    readonly artifactSink?: ArtifactSink;
-    readonly onProgress: (progress: number) => void;
-  }): Promise<{
-    readonly artifacts: Readonly<Record<string, string>>;
-    readonly durationMs: number;
-  }> {
-    const targetLanguage = input.languageCode;
-    if (targetLanguage === null || targetLanguage.length === 0) {
-      throw new Error('Translate stage requires a target language code.');
-    }
-
-    const operation = this.options.repository.startOperation({
-      kind: TRANSCRIPTION_OPERATION_KINDS.TRANSLATE,
-      workflowId: input.workflowId,
-      jobId: input.jobId,
-      nodeId: input.nodeId,
-      languageCode: targetLanguage,
-    });
-
-    publishTranscriptionOperationStarted({
-      eventBus: this.options.eventBus,
-      workflowId: input.workflowId,
-      jobId: input.jobId,
-      nodeId: input.nodeId,
-      operation,
-    });
-
-    try {
-      const sourceCanonical = this.options.repository.getCanonicalTranscript(
-        input.workflowId,
-        'en',
-      );
-      if (sourceCanonical === null) {
-        throw new Error('Translation requires an English canonical transcript.');
-      }
-
-      const translated = await this.options.translatePort.translate({
-        source: sourceCanonical,
-        targetLanguageCode: targetLanguage,
-        workflowId: input.workflowId,
-        jobId: input.jobId,
-        nodeId: input.nodeId,
-        onProgress: input.onProgress,
-      });
-
-      const aggregate = this.options.processingPlatform.process(translated);
-      this.options.repository.saveCanonicalTranscript(
-        aggregate.transcript,
-        aggregate.quality.score,
-      );
-
-      const artifactPath = `${input.artifactRoot}/${input.nodeId}-${targetLanguage}-canonical.json`;
-      const sink = input.artifactSink ?? this.options.artifactSink;
-      if (sink !== undefined) {
-        await sink.writeText(artifactPath, serializeCanonicalTranscript(aggregate.transcript));
-      }
-
-      const completed = this.options.repository.completeOperation(operation.id, artifactPath, 1);
-
-      publishTranscriptionOperationCompleted({
-        eventBus: this.options.eventBus,
-        workflowId: input.workflowId,
-        jobId: input.jobId,
-        nodeId: input.nodeId,
-        operation: completed,
-        artifactPath,
-      });
-
-      return {
-        artifacts: {
-          [`translation:${targetLanguage}`]: artifactPath,
-          [`canonical-transcript:${targetLanguage}`]: artifactPath,
-        },
-        durationMs: 1,
-      };
-    } catch (error) {
-      const failed = this.options.repository.failOperation(operation.id);
-      const message = error instanceof Error ? error.message : 'Translation failed.';
       publishTranscriptionOperationFailed({
         eventBus: this.options.eventBus,
         workflowId: input.workflowId,

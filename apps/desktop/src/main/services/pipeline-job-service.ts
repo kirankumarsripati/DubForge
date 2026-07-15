@@ -171,6 +171,7 @@ export function createPipelineJobService(
     ffmpegPath: 'ffmpeg',
     useFixtureMediaAdapters: true,
     useFixtureTranscriptionAdapters: true,
+    useFixtureLocalizationAdapters: true,
   });
 
   return new PipelineJobService(cacheService, jobsRoot, platformStack);

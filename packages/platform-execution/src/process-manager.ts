@@ -1,12 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { EXECUTION_STATUSES } from './types.js';
-import type {
-  ActiveExecution,
-  ArtifactSink,
-  CancellationSignal,
-  ExecutionStatus,
-} from './types.js';
+import type { ActiveExecution, CancellationSignal, ExecutionStatus } from './types.js';
 
 export class ProcessManager {
   private readonly executions = new Map<string, ActiveExecution>();
@@ -50,7 +45,7 @@ export class ProcessManager {
       }
     }
 
-    return controller.signal as CancellationSignal;
+    return controller.signal;
   }
 
   complete(executionId: string, status: ExecutionStatus): void {
@@ -114,7 +109,7 @@ export function createTimeoutSignal(
   }
 
   return {
-    signal: controller.signal as CancellationSignal,
+    signal: controller.signal,
     clear: () => {
       clearTimeout(timer);
     },

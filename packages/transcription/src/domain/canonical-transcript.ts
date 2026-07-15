@@ -62,10 +62,11 @@ export function serializeCanonicalTranscript(transcript: CanonicalTranscript): s
 }
 
 export function deserializeCanonicalTranscript(content: string): CanonicalTranscript {
-  const parsed = JSON.parse(content) as CanonicalTranscript;
-  if (parsed.version !== CANONICAL_TRANSCRIPT_VERSION) {
-    throw new Error(`Unsupported canonical transcript version "${parsed.version}".`);
+  const parsed = JSON.parse(content) as Record<string, unknown>;
+  const version = parsed.version;
+  if (typeof version !== 'string' || version !== CANONICAL_TRANSCRIPT_VERSION) {
+    throw new Error(`Unsupported canonical transcript version "${String(version)}".`);
   }
 
-  return parsed;
+  return parsed as unknown as CanonicalTranscript;
 }

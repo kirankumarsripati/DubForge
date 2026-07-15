@@ -4,23 +4,17 @@ import type {
 } from '@dubforge/platform-execution-adapters';
 import { NODE_KINDS, type NodeKind } from '@dubforge/types';
 
-import {
-  BuildTranscriptService,
-  RecognizeSpeechService,
-  TranslateTranscriptService,
-} from './transcription-services.js';
+import { BuildTranscriptService, RecognizeSpeechService } from './transcription-services.js';
 
 const TRANSCRIPTION_NODE_KINDS = new Set<NodeKind>([
   NODE_KINDS.SPEECH_RECOGNITION,
   NODE_KINDS.ENGLISH_TRANSCRIPT,
-  NODE_KINDS.TRANSLATE,
 ]);
 
 export class TranscriptionApplication {
   constructor(
     private readonly recognizeService: RecognizeSpeechService,
     private readonly buildService: BuildTranscriptService,
-    private readonly translateService: TranslateTranscriptService,
   ) {}
 
   canHandle(nodeKind: NodeKind): boolean {
@@ -45,16 +39,6 @@ export class TranscriptionApplication {
           workflowId: request.workflowId,
           jobId: request.jobId,
           nodeId: request.nodeId,
-          artifactRoot: request.artifactRoot,
-          artifactSink: request.artifactSink,
-          onProgress: request.onProgress,
-        });
-      case NODE_KINDS.TRANSLATE:
-        return this.translateService.translateForWorkflow({
-          workflowId: request.workflowId,
-          jobId: request.jobId,
-          nodeId: request.nodeId,
-          languageCode: request.languageCode,
           artifactRoot: request.artifactRoot,
           artifactSink: request.artifactSink,
           onProgress: request.onProgress,

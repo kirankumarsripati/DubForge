@@ -54,7 +54,7 @@ export class FasterWhisperAdapter implements RecognizeSpeechPort {
     const pythonPath = this.options.pythonPath ?? 'python3';
     const script = `
 import json, sys
-print(json.dumps({"segments":[{"start":0,"end":2.5,"text":"Hello world.","avg_logprob":-0.1},{"start":2.5,"end":5.0,"text":"Placeholder faster-whisper output.","avg_logprob":-0.2}],"durationSeconds":${input.durationSeconds}}))
+print(json.dumps({"segments":[{"start":0,"end":2.5,"text":"Hello world.","avg_logprob":-0.1},{"start":2.5,"end":5.0,"text":"Placeholder faster-whisper output.","avg_logprob":-0.2}],"durationSeconds":${String(input.durationSeconds)}}))
 `;
     const { stdout } = await execFileAsync(pythonPath, ['-c', script], {
       maxBuffer: 10 * 1024 * 1024,

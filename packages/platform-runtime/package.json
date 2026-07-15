@@ -27,6 +27,7 @@
     "@dubforge/platform-resource": "workspace:*",
     "@dubforge/media": "workspace:*",
     "@dubforge/transcription": "workspace:*",
+    "@dubforge/localization": "workspace:*",
     "@dubforge/providers": "workspace:*"
   },
   "devDependencies": {

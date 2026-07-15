@@ -1,0 +1,22 @@
+{
+  "targetLanguageCode": "hi",
+  "segmentCount": 2,
+  "segments": [
+    {
+      "id": "seg-hello",
+      "startMs": 0,
+      "endMs": 2500,
+      "sourceText": "Hello world.",
+      "text": "नमस्ते दुनिया।",
+      "languageCode": "hi"
+    },
+    {
+      "id": "seg-golden",
+      "startMs": 2500,
+      "endMs": 5000,
+      "sourceText": "This is a golden transcript.",
+      "text": "यह एक स्वर्णिम प्रतिलेख है।",
+      "languageCode": "hi"
+    }
+  ]
+}

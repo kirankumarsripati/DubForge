@@ -26,18 +26,3 @@ export interface RecognizeSpeechResult {
 export interface RecognizeSpeechPort {
   recognize(input: RecognizeSpeechInput): Promise<RecognizeSpeechResult>;
 }
-
-export interface TranslateTranscriptInput {
-  readonly source: import('../domain/canonical-transcript.js').CanonicalTranscript;
-  readonly targetLanguageCode: string;
-  readonly workflowId: string;
-  readonly jobId: string;
-  readonly nodeId: string;
-  readonly onProgress: (progress: number) => void;
-}
-
-export interface TranslateTranscriptPort {
-  translate(
-    input: TranslateTranscriptInput,
-  ): Promise<import('../domain/canonical-transcript.js').CanonicalTranscript>;
-}
