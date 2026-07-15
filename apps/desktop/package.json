@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@dubforge/job-config": "workspace:*",
+    "@dubforge/pipeline": "workspace:*",
+    "@dubforge/providers": "workspace:*",
     "@dubforge/shared": "workspace:*",
     "@dubforge/types": "workspace:*",
     "@dubforge/ui": "workspace:*",

@@ -29,7 +29,18 @@ export {
   type VideoMetadataResponse,
   type DubForgeApi,
   type DubForgeFilesApi,
+  type DubForgePipelineApi,
   type DubForgeVideoApi,
+  PIPELINE_IPC_CHANNELS,
+  cancelPipelineJobRequestSchema,
+  pipelineEventSchema,
+  pipelineJobResponseSchema,
+  startPipelineJobRequestSchema,
+  type CancelPipelineJobRequest,
+  type PipelineEventPayload,
+  type PipelineIpcChannel,
+  type PipelineJobResponse,
+  type StartPipelineJobRequest,
 } from './ipc';
 export {
   calculateThumbnailTimestampSeconds,

@@ -3,6 +3,7 @@ import type { ServiceContainer } from '@dubforge/shared';
 import { app } from 'electron';
 import { join } from 'node:path';
 import { FfprobeService } from './services/ffprobe-service';
+import { PipelineJobService } from './services/pipeline-job-service';
 import { getRecentFilesStorePath, RecentFilesService } from './services/recent-files-service';
 import { ThumbnailService } from './services/thumbnail-service';
 import { VideoCacheService } from './services/video-cache-service';
@@ -13,6 +14,7 @@ export const VIDEO_CACHE_SERVICE_TOKEN = createToken<VideoCacheService>('VideoCa
 export const THUMBNAIL_SERVICE_TOKEN = createToken<ThumbnailService>('ThumbnailService');
 export const RECENT_FILES_SERVICE_TOKEN = createToken<RecentFilesService>('RecentFilesService');
 export const VIDEO_IMPORT_SERVICE_TOKEN = createToken<VideoImportService>('VideoImportService');
+export const PIPELINE_JOB_SERVICE_TOKEN = createToken<PipelineJobService>('PipelineJobService');
 
 export function createThumbnailUrl(videoId: string): string {
   return `dubforge://thumbnail/${videoId}`;
@@ -37,6 +39,12 @@ export function createApplicationContainer(): ServiceContainer {
       container.resolve(THUMBNAIL_SERVICE_TOKEN),
       container.resolve(RECENT_FILES_SERVICE_TOKEN),
       createThumbnailUrl,
+    );
+  });
+  container.registerSingleton(PIPELINE_JOB_SERVICE_TOKEN, () => {
+    return new PipelineJobService(
+      container.resolve(VIDEO_CACHE_SERVICE_TOKEN),
+      join(userDataPath, 'jobs'),
     );
   });
 

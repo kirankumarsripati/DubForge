@@ -1,3 +1,39 @@
+export const NODE_KINDS = {
+  VALIDATE: 'validate',
+  FINGERPRINT: 'fingerprint',
+  METADATA: 'metadata',
+  EXTRACT_AUDIO: 'extract-audio',
+  SPEECH_RECOGNITION: 'speech-recognition',
+  ENGLISH_TRANSCRIPT: 'english-transcript',
+  ENGLISH_SUBTITLE: 'english-subtitle',
+  TRANSLATE: 'translate',
+  SUBTITLE: 'subtitle',
+  SPEECH: 'speech',
+  ALIGN: 'align',
+  MUX: 'mux',
+  VERIFY: 'verify',
+  MANIFEST: 'manifest',
+} as const;
+
+export type NodeKind = (typeof NODE_KINDS)[keyof typeof NODE_KINDS];
+
+export type WorkflowNodeStatus =
+  'pending' | 'queued' | 'running' | 'completed' | 'failed' | 'skipped' | 'cancelled';
+
+export interface WorkflowTimelineNode {
+  readonly id: string;
+  readonly kind: NodeKind;
+  readonly label: string;
+  readonly status: WorkflowNodeStatus;
+  readonly progress: number;
+  readonly dependencies: readonly string[];
+  readonly startedAt: string | null;
+  readonly completedAt: string | null;
+  readonly durationMs: number | null;
+  readonly languageCode: string | null;
+  readonly layer: number;
+}
+
 export type AppRoute = 'home' | 'jobs' | 'models' | 'settings' | 'about';
 
 export type JobStatus =
@@ -38,6 +74,7 @@ export interface Job {
   readonly durationSeconds: number | null;
   readonly outputPath: string | null;
   readonly stages: readonly PipelineStage[];
+  readonly timeline: readonly WorkflowTimelineNode[];
   readonly error: JobError | null;
 }
 

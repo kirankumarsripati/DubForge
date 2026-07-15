@@ -17,6 +17,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@dubforge/job-config": "workspace:*",
+    "@dubforge/types": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"

@@ -2,6 +2,7 @@ import type { Job } from '@dubforge/types';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Progress } from '@dubforge/ui';
 import { CheckCircle2, Circle, Loader2, XCircle } from 'lucide-react';
 import type { PipelineStageStatus } from '@dubforge/types';
+import { GraphTimelineSection } from '../jobs/GraphTimeline';
 
 interface ActiveJobCardProps {
   job: Job;
@@ -56,6 +57,7 @@ export function ActiveJobCard({ job, onCancel }: ActiveJobCardProps): React.JSX.
             </li>
           ))}
         </ol>
+        <GraphTimelineSection job={job} />
       </CardContent>
     </Card>
   );

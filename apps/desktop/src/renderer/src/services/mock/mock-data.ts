@@ -87,6 +87,7 @@ export const MOCK_JOBS: Job[] = [
     durationSeconds: 2820,
     outputPath: '~/Movies/DubForge/morning-yoga-flow.mkv',
     stages: completedStages,
+    timeline: [],
     error: null,
   },
   {
@@ -100,6 +101,7 @@ export const MOCK_JOBS: Job[] = [
     durationSeconds: null,
     outputPath: null,
     stages: processingStages,
+    timeline: [],
     error: null,
   },
   {
@@ -121,6 +123,7 @@ export const MOCK_JOBS: Job[] = [
       { name: 'mux', label: 'Mux', status: 'skipped', progress: 0 },
       { name: 'verify', label: 'Verify', status: 'skipped', progress: 0 },
     ],
+    timeline: [],
     error: {
       title: 'Audio extraction failed',
       description: 'FFmpeg could not read the audio stream from this file.',

@@ -1,5 +1,21 @@
 export { VIDEO_IPC_CHANNELS, type VideoIpcChannel } from './video-channels';
-export type { DubForgeApi, DubForgeFilesApi, DubForgeVideoApi } from './dubforge-api';
+export { PIPELINE_IPC_CHANNELS, type PipelineIpcChannel } from './pipeline-channels';
+export {
+  cancelPipelineJobRequestSchema,
+  pipelineEventSchema,
+  pipelineJobResponseSchema,
+  startPipelineJobRequestSchema,
+  type CancelPipelineJobRequest,
+  type PipelineEventPayload,
+  type PipelineJobResponse,
+  type StartPipelineJobRequest,
+} from './pipeline-schemas';
+export type {
+  DubForgeApi,
+  DubForgeFilesApi,
+  DubForgePipelineApi,
+  DubForgeVideoApi,
+} from './dubforge-api';
 export {
   inspectVideoFileRequestSchema,
   openRecentVideoRequestSchema,

@@ -43,6 +43,7 @@ export class MockPipelineService implements PipelineService {
       durationSeconds: null,
       outputPath: request.outputDirectory,
       stages: initialStages,
+      timeline: [],
       error: null,
     };
     mockJobService.addJob(job);

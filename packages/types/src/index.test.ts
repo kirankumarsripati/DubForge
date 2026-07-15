@@ -15,6 +15,7 @@ describe('Job types', () => {
       durationSeconds: 1800,
       outputPath: '/output/demo.mkv',
       stages: [],
+      timeline: [],
       error: null,
     };
     expect(job.status).toBe('completed');

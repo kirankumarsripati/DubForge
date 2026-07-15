@@ -50,6 +50,12 @@ importers:
       '@dubforge/job-config':
         specifier: workspace:*
         version: link:../../packages/job-config
+      '@dubforge/pipeline':
+        specifier: workspace:*
+        version: link:../../packages/pipeline
+      '@dubforge/providers':
+        specifier: workspace:*
+        version: link:../../packages/providers
       '@dubforge/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -141,6 +147,16 @@ importers:
         version: 3.2.7(@types/debug@4.1.13)(@types/node@26.1.1)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(yaml@2.9.0)
 
   packages/pipeline:
+    dependencies:
+      '@dubforge/job-config':
+        specifier: workspace:*
+        version: link:../job-config
+      '@dubforge/providers':
+        specifier: workspace:*
+        version: link:../providers
+      '@dubforge/types':
+        specifier: workspace:*
+        version: link:../types
     devDependencies:
       typescript:
         specifier: ^5.8.3
@@ -150,6 +166,13 @@ importers:
         version: 3.2.7(@types/debug@4.1.13)(@types/node@26.1.1)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(yaml@2.9.0)
 
   packages/providers:
+    dependencies:
+      '@dubforge/job-config':
+        specifier: workspace:*
+        version: link:../job-config
+      '@dubforge/types':
+        specifier: workspace:*
+        version: link:../types
     devDependencies:
       typescript:
         specifier: ^5.8.3

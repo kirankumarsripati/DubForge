@@ -1,6 +1,7 @@
 import { app, BrowserWindow, shell } from 'electron';
 import { join } from 'node:path';
 import { createApplicationContainer } from './container';
+import { registerPipelineIpcHandlers } from './ipc/pipeline-handlers';
 import {
   registerPrivilegedSchemes,
   registerThumbnailProtocol,
@@ -51,6 +52,7 @@ void app.whenReady().then(() => {
   const container = createApplicationContainer();
   registerThumbnailProtocol(container);
   registerVideoIpcHandlers(container);
+  registerPipelineIpcHandlers(container);
 
   createWindow();
 

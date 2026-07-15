@@ -50,6 +50,28 @@ export function HomePage(): React.JSX.Element {
   }, [fetchActiveJob, fetchRecentFiles]);
 
   useEffect(() => {
+    const api = window.dubforge;
+    if (api === undefined || !('pipeline' in api)) {
+      return;
+    }
+
+    const unsubscribe = api.pipeline.subscribeEvents(() => {
+      void fetchActiveJob();
+    });
+
+    const interval = window.setInterval(() => {
+      if (activeJob !== null && activeJob.status === 'processing') {
+        void fetchActiveJob();
+      }
+    }, 1500);
+
+    return () => {
+      unsubscribe();
+      window.clearInterval(interval);
+    };
+  }, [activeJob, fetchActiveJob]);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'o') {
         event.preventDefault();
