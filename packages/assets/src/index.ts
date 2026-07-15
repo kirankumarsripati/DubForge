@@ -29,7 +29,11 @@ export type {
 export { AssetDatabase, createAssetDatabase } from './database/connection.js';
 export type { AssetDatabaseOptions } from './database/connection.js';
 
-export { ALL_MIGRATIONS, MIGRATION_001_INITIAL } from './migrations/migrations.js';
+export {
+  ALL_MIGRATIONS,
+  MIGRATION_001_INITIAL,
+  MIGRATION_003_ASSET_DIAGNOSTICS,
+} from './migrations/migrations.js';
 export type { Migration } from './migrations/migrations.js';
 export { MigrationRunner, runMigrations } from './migrations/runner.js';
 
@@ -58,6 +62,19 @@ export { MirrorDownloadProvider } from './download/providers/mirror-download-pro
 
 export { AssetVerifier } from './verification/verifier.js';
 export type { VerificationResult } from './verification/verifier.js';
+export { DetailedAssetVerifier } from './verification/detailed-verifier.js';
+export type { DetailedVerificationResult } from './verification/detailed-verifier.js';
+
+export { DiagnosticsRepository } from './diagnostics/diagnostics-repository.js';
+export { VERIFICATION_CHECK_CODES } from './diagnostics/constants.js';
+export type {
+  AssetDiagnostics,
+  CreateDownloadReportInput,
+  DownloadReport,
+  VerificationCheckStep,
+  VerificationReport,
+} from './diagnostics/types.js';
+export { formatDownloadReportError } from './diagnostics/format-errors.js';
 
 export { AssetResolver } from './resolver/asset-resolver.js';
 export type { ResolveByIdOptions, ResolveByKindOptions } from './resolver/asset-resolver.js';

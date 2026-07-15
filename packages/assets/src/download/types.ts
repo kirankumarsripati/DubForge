@@ -17,6 +17,21 @@ export interface DownloadProgressUpdate {
   readonly totalBytes: number | null;
 }
 
+export interface DownloadProviderAttemptResult {
+  readonly url: string;
+  readonly provider: string;
+  readonly redirectChain: readonly string[];
+  readonly httpStatus: number | null;
+  readonly responseHeaders: Readonly<Record<string, string>>;
+  readonly contentLength: number | null;
+  readonly downloadedSizeBytes: number;
+  readonly mimeType: string | null;
+  readonly durationMs: number;
+  readonly retryCount: number;
+  readonly responseBody: string | null;
+  readonly filesystemError: string | null;
+}
+
 export interface DownloadExecutionContext {
   readonly assetId: string;
   readonly version: string;
@@ -29,7 +44,10 @@ export interface DownloadExecutionContext {
 export interface DownloadProvider {
   readonly type: DownloadSourceType;
   canHandle(source: DownloadSource): boolean;
-  download(source: DownloadSource, context: DownloadExecutionContext): Promise<void>;
+  download(
+    source: DownloadSource,
+    context: DownloadExecutionContext,
+  ): Promise<DownloadProviderAttemptResult>;
   probeTotalBytes?(source: DownloadSource): Promise<number | null>;
 }
 

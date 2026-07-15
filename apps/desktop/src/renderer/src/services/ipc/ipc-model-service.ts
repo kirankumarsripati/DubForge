@@ -1,8 +1,7 @@
-import type { Model } from '@dubforge/types';
-import type { ModelResponse } from '@dubforge/shared';
+import type { AssetDiagnostics, Model, VerifyModelResult } from '@dubforge/types';
 import { MODEL_IPC_CHANNELS } from '@dubforge/shared';
 
-function toModel(response: ModelResponse): Model {
+function toModel(response: Model): Model {
   return response;
 }
 
@@ -44,13 +43,22 @@ export class IpcModelService {
     return toModel(await api.models.updateModel(id));
   }
 
-  async verifyModel(id: string): Promise<Model> {
+  async verifyModel(id: string): Promise<VerifyModelResult> {
     const api = window.dubforge;
     if (api === undefined) {
       throw new Error('Models bridge is unavailable.');
     }
 
-    return toModel(await api.models.verifyModel(id));
+    return api.models.verifyModel(id);
+  }
+
+  async getDiagnostics(id: string): Promise<AssetDiagnostics> {
+    const api = window.dubforge;
+    if (api === undefined) {
+      throw new Error('Models bridge is unavailable.');
+    }
+
+    return api.models.getDiagnostics(id);
   }
 
   async repairModel(id: string): Promise<Model> {

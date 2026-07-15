@@ -1,5 +1,9 @@
-import type { Model } from '@dubforge/types';
-import { modelResponseSchema } from '@dubforge/shared';
+import type { AssetDiagnostics, Model, VerifyModelResult } from '@dubforge/types';
+import {
+  assetDiagnosticsResponseSchema,
+  modelResponseSchema,
+  verifyModelResponseSchema,
+} from '@dubforge/shared';
 import type { AssetPlatform, ModelView } from '@dubforge/assets';
 
 type ModelChangeListener = () => void;
@@ -57,11 +61,9 @@ export class DesktopModelService {
     return model;
   }
 
-  async verifyModel(id: string): Promise<Model> {
-    const valid = await this.assetPlatform.service.verifyAsset(id);
-    if (!valid) {
-      await this.assetPlatform.refreshRegistry();
-    }
+  async verifyModel(id: string): Promise<VerifyModelResult> {
+    const verificationReport = await this.assetPlatform.service.verifyAsset(id);
+    await this.assetPlatform.refreshRegistry();
 
     this.notifyListeners();
     const model = this.findModel(id);
@@ -69,7 +71,20 @@ export class DesktopModelService {
       throw new Error(`Model not found: ${id}`);
     }
 
-    return model;
+    return verifyModelResponseSchema.parse({
+      model,
+      verificationReport,
+    }) as VerifyModelResult;
+  }
+
+  getDiagnostics(id: string): AssetDiagnostics {
+    if (this.assetPlatform.registry.getAsset(id) === null) {
+      throw new Error(`Model not found in registry: ${id}`);
+    }
+
+    return assetDiagnosticsResponseSchema.parse(
+      this.assetPlatform.service.getDiagnostics(id),
+    ) as AssetDiagnostics;
   }
 
   async repairModel(id: string): Promise<Model> {
@@ -105,9 +120,14 @@ export class DesktopModelService {
         this.assetPlatform.service.getDownloadManager().listActiveDownloads().length > 0;
 
       if (hasActiveDownloads) {
-        void this.assetPlatform.refreshRegistry().then(() => {
-          this.notifyListeners();
-        });
+        void this.assetPlatform
+          .refreshRegistry()
+          .then(() => {
+            this.notifyListeners();
+          })
+          .catch(() => {
+            this.notifyListeners();
+          });
       }
     }, 500);
   }

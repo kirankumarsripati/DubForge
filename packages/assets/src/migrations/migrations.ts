@@ -96,7 +96,56 @@ export const MIGRATION_002_DOWNLOAD_MANIFEST: Migration = {
   },
 };
 
+export const MIGRATION_003_ASSET_DIAGNOSTICS: Migration = {
+  version: 3,
+  name: 'asset_diagnostics',
+  up: (db) => {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS download_reports (
+        id TEXT PRIMARY KEY,
+        download_id TEXT NOT NULL,
+        asset_id TEXT NOT NULL,
+        url TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        redirect_chain_json TEXT NOT NULL,
+        http_status INTEGER,
+        response_headers_json TEXT NOT NULL,
+        content_length INTEGER,
+        expected_size_bytes INTEGER,
+        downloaded_size_bytes INTEGER NOT NULL,
+        sha256_expected TEXT,
+        sha256_actual TEXT,
+        mime_type TEXT,
+        duration_ms INTEGER NOT NULL,
+        retry_count INTEGER NOT NULL,
+        success INTEGER NOT NULL,
+        error_message TEXT,
+        response_body TEXT,
+        filesystem_error TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (download_id) REFERENCES downloads(id) ON DELETE CASCADE,
+        FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS verification_reports (
+        id TEXT PRIMARY KEY,
+        asset_id TEXT NOT NULL,
+        valid INTEGER NOT NULL,
+        steps_json TEXT NOT NULL,
+        checked_at TEXT NOT NULL,
+        duration_ms INTEGER NOT NULL,
+        FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_download_reports_asset ON download_reports(asset_id);
+      CREATE INDEX IF NOT EXISTS idx_download_reports_download ON download_reports(download_id);
+      CREATE INDEX IF NOT EXISTS idx_verification_reports_asset ON verification_reports(asset_id);
+    `);
+  },
+};
+
 export const ALL_MIGRATIONS: readonly Migration[] = [
   MIGRATION_001_INITIAL,
   MIGRATION_002_DOWNLOAD_MANIFEST,
+  MIGRATION_003_ASSET_DIAGNOSTICS,
 ];

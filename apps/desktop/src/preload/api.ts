@@ -46,6 +46,7 @@ export function createDubForgeApi(): DubForgeApi {
       updateModel: (id) => ipcRenderer.invoke(MODEL_IPC_CHANNELS.UPDATE_MODEL, { id }),
       verifyModel: (id) => ipcRenderer.invoke(MODEL_IPC_CHANNELS.VERIFY_MODEL, { id }),
       repairModel: (id) => ipcRenderer.invoke(MODEL_IPC_CHANNELS.REPAIR_MODEL, { id }),
+      getDiagnostics: (id) => ipcRenderer.invoke(MODEL_IPC_CHANNELS.GET_DIAGNOSTICS, { id }),
       subscribeEvents: (listener) => {
         ipcRenderer.send(MODEL_IPC_CHANNELS.SUBSCRIBE_EVENTS);
         const handler = (_event: Electron.IpcRendererEvent, payload: ModelsChangedEvent): void => {

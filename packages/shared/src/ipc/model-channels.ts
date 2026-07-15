@@ -5,6 +5,7 @@ export const MODEL_IPC_CHANNELS = {
   UPDATE_MODEL: 'models:update',
   VERIFY_MODEL: 'models:verify',
   REPAIR_MODEL: 'models:repair',
+  GET_DIAGNOSTICS: 'models:get-diagnostics',
   SUBSCRIBE_EVENTS: 'models:subscribe-events',
   EVENT: 'models:event',
 } as const;

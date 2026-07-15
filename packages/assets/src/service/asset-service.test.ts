@@ -10,7 +10,7 @@ describe('MigrationRunner', () => {
   it('applies initial migration once', () => {
     const database = new AssetDatabase();
     const firstApplied = runMigrations(database.raw);
-    expect(firstApplied).toHaveLength(2);
+    expect(firstApplied).toHaveLength(3);
 
     const secondApplied = runMigrations(database.raw);
     expect(secondApplied).toHaveLength(0);
@@ -25,8 +25,10 @@ describe('MigrationRunner', () => {
       'asset_dependencies',
       'asset_versions',
       'assets',
+      'download_reports',
       'downloads',
       'schema_migrations',
+      'verification_reports',
     ]);
 
     database.close();
@@ -43,6 +45,7 @@ describe('MigrationRunner', () => {
     expect(version).toEqual([
       { version: 1, name: 'initial' },
       { version: 2, name: 'download_manifest' },
+      { version: 3, name: 'asset_diagnostics' },
     ]);
     database.close();
   });
@@ -119,8 +122,20 @@ describe('AssetService integration', () => {
     const resolved = service.resolveAsset('whisper-base');
     expect(resolved).not.toBeNull();
 
-    const valid = await service.verifyAsset('whisper-base');
-    expect(valid).toBe(true);
+    const report = await service.verifyAsset('whisper-base');
+    expect(report.valid).toBe(true);
+    expect(report.steps.map((step) => step.code)).toEqual([
+      'exists',
+      'size',
+      'sha256',
+      'permissions',
+      'readable',
+      'healthy',
+    ]);
+
+    const diagnostics = service.getDiagnostics('whisper-base');
+    expect(diagnostics.downloadReports.length).toBeGreaterThan(0);
+    expect(diagnostics.verificationReports.length).toBeGreaterThan(0);
 
     service.close();
   });

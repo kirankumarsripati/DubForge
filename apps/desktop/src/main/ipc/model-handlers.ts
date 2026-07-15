@@ -2,9 +2,11 @@ import { ipcMain, type WebContents } from 'electron';
 
 import {
   MODEL_IPC_CHANNELS,
+  assetDiagnosticsResponseSchema,
   modelIdRequestSchema,
   modelResponseSchema,
   modelsChangedEventSchema,
+  verifyModelResponseSchema,
 } from '@dubforge/shared';
 import type { ServiceContainer } from '@dubforge/shared';
 
@@ -38,8 +40,13 @@ export function registerModelIpcHandlers(container: ServiceContainer): void {
 
   ipcMain.handle(MODEL_IPC_CHANNELS.VERIFY_MODEL, async (_event, payload: unknown) => {
     const request = modelIdRequestSchema.parse(payload);
-    const model = await modelService.verifyModel(request.id);
-    return modelResponseSchema.parse(model);
+    const result = await modelService.verifyModel(request.id);
+    return verifyModelResponseSchema.parse(result);
+  });
+
+  ipcMain.handle(MODEL_IPC_CHANNELS.GET_DIAGNOSTICS, async (_event, payload: unknown) => {
+    const request = modelIdRequestSchema.parse(payload);
+    return assetDiagnosticsResponseSchema.parse(modelService.getDiagnostics(request.id));
   });
 
   ipcMain.handle(MODEL_IPC_CHANNELS.REPAIR_MODEL, async (_event, payload: unknown) => {

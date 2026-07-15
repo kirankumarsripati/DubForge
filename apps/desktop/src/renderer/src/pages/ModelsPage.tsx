@@ -12,6 +12,10 @@ export function ModelsPage(): React.JSX.Element {
   const updateModel = useModelsStore((state) => state.updateModel);
   const verifyModel = useModelsStore((state) => state.verifyModel);
   const repairModel = useModelsStore((state) => state.repairModel);
+  const toggleDiagnostics = useModelsStore((state) => state.toggleDiagnostics);
+  const diagnosticsByModelId = useModelsStore((state) => state.diagnosticsByModelId);
+  const latestVerificationByModelId = useModelsStore((state) => state.latestVerificationByModelId);
+  const expandedDiagnosticsId = useModelsStore((state) => state.expandedDiagnosticsId);
   const subscribeToChanges = useModelsStore((state) => state.subscribeToChanges);
 
   useEffect(() => {
@@ -44,6 +48,9 @@ export function ModelsPage(): React.JSX.Element {
         {models.status === 'success' && models.data !== null ? (
           <ModelsList
             models={models.data}
+            diagnosticsByModelId={diagnosticsByModelId}
+            latestVerificationByModelId={latestVerificationByModelId}
+            expandedDiagnosticsId={expandedDiagnosticsId}
             onDownload={(id) => {
               void downloadModel(id);
             }}
@@ -58,6 +65,9 @@ export function ModelsPage(): React.JSX.Element {
             }}
             onRepair={(id) => {
               void repairModel(id);
+            }}
+            onToggleDiagnostics={(id) => {
+              toggleDiagnostics(id);
             }}
           />
         ) : null}

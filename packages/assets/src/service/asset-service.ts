@@ -3,6 +3,8 @@ import { dirname, join } from 'node:path';
 
 import { BINARIES_DIRECTORY } from '../constants.js';
 import { AssetDatabase } from '../database/connection.js';
+import { DiagnosticsRepository } from '../diagnostics/diagnostics-repository.js';
+import type { AssetDiagnostics, VerificationReport } from '../diagnostics/types.js';
 import { DownloadManager } from '../download/download-manager.js';
 import { AssetHealthService } from '../health/asset-health.js';
 import { runMigrations } from '../migrations/runner.js';
@@ -10,8 +12,9 @@ import { toModelView, type ModelHealthStatus, type ModelView } from '../presenta
 import type { AssetManifestRegistry } from '../registry/asset-manifest-registry.js';
 import { AssetRepository } from '../repository/asset-repository.js';
 import { AssetResolver } from '../resolver/asset-resolver.js';
-import { ASSET_STATUSES } from '../types.js';
+import { ASSET_STATUSES, HEALTH_STATUSES } from '../types.js';
 import type { AssetHealthReport, AssetRecord, DownloadRecord, ResolvedAsset } from '../types.js';
+import { DetailedAssetVerifier } from '../verification/detailed-verifier.js';
 import { AssetVerifier } from '../verification/verifier.js';
 import { VersionManager } from '../version/version-manager.js';
 
@@ -30,8 +33,10 @@ export interface DependencyResolution {
 export class AssetService {
   private readonly database: AssetDatabase;
   private readonly repository: AssetRepository;
+  private readonly diagnosticsRepository: DiagnosticsRepository;
   private readonly downloadManager: DownloadManager;
   private readonly verifier: AssetVerifier;
+  private readonly detailedVerifier: DetailedAssetVerifier;
   private readonly resolver: AssetResolver;
   private readonly healthService: AssetHealthService;
   private readonly versionManager: VersionManager;
@@ -44,17 +49,28 @@ export class AssetService {
     });
     runMigrations(this.database.raw);
     this.repository = new AssetRepository(this.database.raw);
+    this.diagnosticsRepository = new DiagnosticsRepository(this.database.raw);
     this.versionManager = new VersionManager();
     const binariesRoot = join(options.rootPath, BINARIES_DIRECTORY);
-    this.downloadManager = new DownloadManager(this.database.raw, this.repository, {
-      binariesRoot,
-    });
+    this.downloadManager = new DownloadManager(
+      this.database.raw,
+      this.repository,
+      this.diagnosticsRepository,
+      {
+        binariesRoot,
+      },
+    );
     this.verifier = new AssetVerifier(this.repository);
     this.resolver = new AssetResolver(this.repository, this.versionManager);
     this.healthService = new AssetHealthService(
       this.repository,
       this.verifier,
       this.versionManager,
+    );
+    this.detailedVerifier = new DetailedAssetVerifier(
+      this.repository,
+      this.diagnosticsRepository,
+      this.healthService,
     );
   }
 
@@ -203,15 +219,22 @@ export class AssetService {
     };
   }
 
-  async verifyAsset(assetId: string): Promise<boolean> {
+  async verifyAsset(assetId: string): Promise<VerificationReport> {
     this.ensureInitialized();
-    const installation = this.repository.getInstallation(assetId);
-    if (installation === null) {
-      return false;
-    }
+    const result = await this.detailedVerifier.verifyAsset(assetId);
+    await this.refreshInstallationHealth();
+    return result.report;
+  }
 
-    const result = await this.verifier.verifyAsset(assetId);
-    return result.valid;
+  getDiagnostics(assetId: string): AssetDiagnostics {
+    this.ensureInitialized();
+    this.options.registry.requireAsset(assetId);
+    return this.diagnosticsRepository.getAssetDiagnostics(assetId);
+  }
+
+  getDiagnosticsRepository(): DiagnosticsRepository {
+    this.ensureInitialized();
+    return this.diagnosticsRepository;
   }
 
   async refreshInstallationHealth(): Promise<void> {
@@ -238,7 +261,24 @@ export class AssetService {
         continue;
       }
 
-      reports.push(await this.healthService.checkAsset(registered.id));
+      try {
+        reports.push(await this.healthService.checkAsset(registered.id));
+      } catch {
+        reports.push({
+          assetId: registered.id,
+          assetName: registered.name,
+          status: HEALTH_STATUSES.UNHEALTHY,
+          issues: [
+            {
+              assetId: registered.id,
+              code: 'health_check_failed',
+              message: 'Health check could not be completed',
+              severity: HEALTH_STATUSES.UNHEALTHY,
+            },
+          ],
+          checkedAt: new Date().toISOString(),
+        });
+      }
     }
 
     return reports;

@@ -1,5 +1,10 @@
 import type { StartJobRequest } from '@dubforge/types';
-import type { ModelResponse, ModelsChangedEvent } from './model-schemas';
+import type {
+  AssetDiagnosticsResponse,
+  ModelResponse,
+  ModelsChangedEvent,
+  VerifyModelResponse,
+} from './model-schemas';
 import type { PipelineEventPayload, PipelineJobResponse } from './pipeline-schemas';
 import type { VideoImportResult } from './video-schemas';
 
@@ -29,8 +34,9 @@ export interface DubForgeModelsApi {
   downloadModel(id: string): Promise<ModelResponse>;
   deleteModel(id: string): Promise<void>;
   updateModel(id: string): Promise<ModelResponse>;
-  verifyModel(id: string): Promise<ModelResponse>;
+  verifyModel(id: string): Promise<VerifyModelResponse>;
   repairModel(id: string): Promise<ModelResponse>;
+  getDiagnostics(id: string): Promise<AssetDiagnosticsResponse>;
   subscribeEvents(listener: (event: ModelsChangedEvent) => void): () => void;
 }
 

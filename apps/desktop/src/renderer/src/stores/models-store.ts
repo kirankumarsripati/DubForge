@@ -1,16 +1,21 @@
-import type { AsyncState, Model } from '@dubforge/types';
+import type { AssetDiagnostics, AsyncState, Model, VerificationReport } from '@dubforge/types';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { modelService } from '../services';
 
 interface ModelsStoreState {
   readonly models: AsyncState<readonly Model[]>;
+  readonly diagnosticsByModelId: Readonly<Record<string, AssetDiagnostics>>;
+  readonly latestVerificationByModelId: Readonly<Record<string, VerificationReport>>;
+  readonly expandedDiagnosticsId: string | null;
   fetchModels: () => Promise<void>;
   downloadModel: (id: string) => Promise<void>;
   deleteModel: (id: string) => Promise<void>;
   updateModel: (id: string) => Promise<void>;
   verifyModel: (id: string) => Promise<void>;
   repairModel: (id: string) => Promise<void>;
+  fetchDiagnostics: (id: string) => Promise<void>;
+  toggleDiagnostics: (id: string) => void;
   subscribeToChanges: () => () => void;
 }
 
@@ -24,6 +29,9 @@ export const useModelsStore = create<ModelsStoreState>()(
   devtools(
     (set, get) => ({
       models: initialState,
+      diagnosticsByModelId: {},
+      latestVerificationByModelId: {},
+      expandedDiagnosticsId: null,
       fetchModels: async () => {
         set({ models: { status: 'loading', data: get().models.data, error: null } });
         try {
@@ -47,12 +55,37 @@ export const useModelsStore = create<ModelsStoreState>()(
         await get().fetchModels();
       },
       verifyModel: async (id) => {
-        await modelService.verifyModel(id);
+        const result = await modelService.verifyModel(id);
+        set((state) => ({
+          latestVerificationByModelId: {
+            ...state.latestVerificationByModelId,
+            [id]: result.verificationReport,
+          },
+          expandedDiagnosticsId: id,
+        }));
+        await get().fetchDiagnostics(id);
         await get().fetchModels();
       },
       repairModel: async (id) => {
         await modelService.repairModel(id);
         await get().fetchModels();
+      },
+      fetchDiagnostics: async (id) => {
+        const diagnostics = await modelService.getDiagnostics(id);
+        set((state) => ({
+          diagnosticsByModelId: {
+            ...state.diagnosticsByModelId,
+            [id]: diagnostics,
+          },
+        }));
+      },
+      toggleDiagnostics: (id) => {
+        const expanded = get().expandedDiagnosticsId;
+        const nextExpanded = expanded === id ? null : id;
+        set({ expandedDiagnosticsId: nextExpanded });
+        if (nextExpanded !== null) {
+          void get().fetchDiagnostics(nextExpanded);
+        }
       },
       subscribeToChanges: () => {
         return modelService.subscribe(() => {

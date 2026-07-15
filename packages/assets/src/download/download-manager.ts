@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import type Database from 'better-sqlite3';
 
 import type { AssetRepository } from '../repository/asset-repository.js';
+import type { DiagnosticsRepository } from '../diagnostics/diagnostics-repository.js';
 import type { AssetDownloadManifest } from './types.js';
 import { ASSET_STATUSES, DOWNLOAD_STATUSES } from '../types.js';
 import type { DownloadRecord } from '../types.js';
@@ -71,6 +72,7 @@ export class DownloadManager {
   constructor(
     private readonly db: Database.Database,
     private readonly repository: AssetRepository,
+    private readonly diagnosticsRepository: DiagnosticsRepository,
     private readonly options: DownloadManagerOptions,
   ) {
     this.providerRegistry = options.providerRegistry ?? createDefaultDownloadProviderRegistry();
@@ -243,6 +245,9 @@ export class DownloadManager {
         tempPath: download.tempPath,
         assetId: download.assetId,
         version: download.targetVersion,
+        downloadId,
+        expectedSizeBytes: probedTotalBytes,
+        diagnosticsRepository: this.diagnosticsRepository,
         signal: controller.signal,
         onProgress: (bytesDownloaded, totalBytes) => {
           this.updateDownloadProgress.run({

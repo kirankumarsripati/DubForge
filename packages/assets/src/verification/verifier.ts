@@ -1,9 +1,9 @@
-import { createHash } from 'node:crypto';
-import { access, readFile } from 'node:fs/promises';
+import { access } from 'node:fs/promises';
 
 import type { AssetRepository } from '../repository/asset-repository.js';
 import { ASSET_STATUSES } from '../types.js';
 import type { AssetRecord } from '../types.js';
+import { hashFileSha256 } from './file-hash.js';
 
 export interface VerificationResult {
   readonly assetId: string;
@@ -54,8 +54,19 @@ export class AssetVerifier {
       };
     }
 
-    const content = await readFile(asset.filePath);
-    const actualChecksum = createHash('sha256').update(content).digest('hex');
+    let actualChecksum: string;
+    try {
+      actualChecksum = await hashFileSha256(asset.filePath);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Checksum verification failed';
+      return {
+        assetId: asset.id,
+        valid: false,
+        reason: message,
+        actualChecksum: null,
+        expectedChecksum: asset.checksum,
+      };
+    }
 
     if (asset.checksum !== null && actualChecksum !== asset.checksum) {
       this.repository.updateAssetMetadata(asset.id, { status: ASSET_STATUSES.CORRUPTED });
