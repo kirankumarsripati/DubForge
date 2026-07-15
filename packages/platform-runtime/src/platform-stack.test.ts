@@ -27,6 +27,7 @@ describe('PlatformStack', () => {
       useFixtureLocalizationAdapters: true,
       useFixtureVoicePerformanceAdapters: true,
       useFixtureTemporalAdapters: true,
+      useFixtureDeliveryAdapters: true,
     });
 
     const finalState = await stack.engine.start({
@@ -50,7 +51,10 @@ describe('PlatformStack', () => {
     const failedNodes = [...finalState.nodeStates.entries()].filter(
       ([, node]) => node.status === 'failed',
     );
-    expect(failedNodes).toHaveLength(0);
+    expect(
+      failedNodes,
+      failedNodes.map(([id, node]) => `${id}: ${node.error ?? 'unknown'}`).join('; '),
+    ).toHaveLength(0);
     expect(finalState.status).toBe('completed');
     expect(stack.observabilityPlatform.getLogger().getEntries().length).toBeGreaterThan(0);
     stack.dispose();

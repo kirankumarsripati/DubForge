@@ -30,6 +30,7 @@
     "@dubforge/localization": "workspace:*",
     "@dubforge/voice-performance": "workspace:*",
     "@dubforge/temporal": "workspace:*",
+    "@dubforge/delivery": "workspace:*",
     "@dubforge/providers": "workspace:*"
   },
   "devDependencies": {

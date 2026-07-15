@@ -15,7 +15,7 @@ export class NodeExecutionAdapter implements ExecutionAdapter {
   constructor(private readonly options: NodeExecutionAdapterOptions = {}) {}
 
   canHandle(request: ExecutionAdapterRequest): boolean {
-    return request.nodeKind === 'validate' || request.nodeKind === 'manifest';
+    return request.nodeKind === 'validate';
   }
 
   execute(request: ExecutionAdapterRequest): Promise<ExecutionAdapterResult> {

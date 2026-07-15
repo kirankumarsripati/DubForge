@@ -1,0 +1,10 @@
+{
+  "durationMs": 5000,
+  "videoStreamCount": 1,
+  "audioStreamCount": 2,
+  "subtitleStreamCount": 2,
+  "languageTags": ["en", "hi"],
+  "container": "mkv",
+  "playable": true,
+  "score": 100
+}

@@ -15,7 +15,7 @@ export function createInitialNodeStates(
       completedAt: null,
       durationMs: null,
       error: null,
-      artifacts: [],
+      artifacts: {},
       progress: 0,
     });
   }

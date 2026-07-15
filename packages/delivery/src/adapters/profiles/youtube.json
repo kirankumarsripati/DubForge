@@ -1,0 +1,16 @@
+{
+  "id": "youtube",
+  "label": "YouTube",
+  "version": "1.0.0",
+  "deliverables": [
+    {
+      "kind": "mp4",
+      "container": "mp4",
+      "embedSubtitles": true,
+      "exportSrt": true,
+      "exportTranscript": false,
+      "includeProjectBundle": false,
+      "includeValidationReport": true
+    }
+  ]
+}

@@ -103,7 +103,7 @@ describe('Scheduler', () => {
             completedAt: new Date().toISOString(),
             durationMs: 10,
             error: null,
-            artifacts: ['/tmp/validation.json'],
+            artifacts: { validate: '/tmp/validation.json' },
             progress: 100,
           },
         ],

@@ -4,6 +4,7 @@ export {
   LOCALIZATION_EVENTS,
   VOICE_PERFORMANCE_EVENTS,
   TEMPORAL_EVENTS,
+  DELIVERY_EVENTS,
   MEDIA_EVENTS,
   TRANSCRIPTION_EVENTS,
   OBSERVABILITY_EVENTS,
@@ -51,6 +52,14 @@ export type {
   TemporalOperationEvent,
   TemporalArtifactProducedEvent,
   TemporalSegmentArtifactEvent,
+  DeliveryPackagingStartedEvent,
+  DeliveryPackagingCompletedEvent,
+  DeliveryValidationCompletedEvent,
+  DeliveryProjectArchivedEvent,
+  DeliveryExportFailedEvent,
+  DeliveryOperationEvent,
+  DeliveryArtifactProducedEvent,
+  DeliveryMetricRecordedEvent,
 } from './events.js';
 
 export { createDomainEventBus, createDomainEventId, type DomainEventBus } from './event-bus.js';

@@ -94,6 +94,19 @@ export const TEMPORAL_EVENTS = {
   SEGMENT_ARTIFACT_REGISTERED: 'temporal.segment-artifact-registered',
 } as const;
 
+export const DELIVERY_EVENTS = {
+  PACKAGING_STARTED: 'delivery.packaging-started',
+  PACKAGING_COMPLETED: 'delivery.packaging-completed',
+  VALIDATION_COMPLETED: 'delivery.validation-completed',
+  PROJECT_ARCHIVED: 'delivery.project-archived',
+  EXPORT_FAILED: 'delivery.export-failed',
+  OPERATION_STARTED: 'delivery.operation-started',
+  OPERATION_COMPLETED: 'delivery.operation-completed',
+  OPERATION_FAILED: 'delivery.operation-failed',
+  ARTIFACT_PRODUCED: 'delivery.artifact-produced',
+  METRIC_RECORDED: 'delivery.metric-recorded',
+} as const;
+
 export interface DomainEventBase {
   readonly id: string;
   readonly timestamp: string;
@@ -415,6 +428,71 @@ export interface TemporalSegmentArtifactEvent extends DomainEventBase {
   readonly languageCode: string;
 }
 
+export interface DeliveryPackagingStartedEvent extends DomainEventBase {
+  readonly type: typeof DELIVERY_EVENTS.PACKAGING_STARTED;
+  readonly nodeId: string;
+  readonly planId: string;
+  readonly deliverableCount: number;
+  readonly exportProfileId: string;
+}
+
+export interface DeliveryPackagingCompletedEvent extends DomainEventBase {
+  readonly type: typeof DELIVERY_EVENTS.PACKAGING_COMPLETED;
+  readonly nodeId: string;
+  readonly deliveryId: string;
+  readonly deliverableCount: number;
+  readonly artifactPath: string;
+}
+
+export interface DeliveryValidationCompletedEvent extends DomainEventBase {
+  readonly type: typeof DELIVERY_EVENTS.VALIDATION_COMPLETED;
+  readonly nodeId: string;
+  readonly deliverableId: string;
+  readonly score: number;
+  readonly playable: boolean;
+}
+
+export interface DeliveryProjectArchivedEvent extends DomainEventBase {
+  readonly type: typeof DELIVERY_EVENTS.PROJECT_ARCHIVED;
+  readonly nodeId: string;
+  readonly bundlePath: string;
+}
+
+export interface DeliveryExportFailedEvent extends DomainEventBase {
+  readonly type: typeof DELIVERY_EVENTS.EXPORT_FAILED;
+  readonly nodeId: string;
+  readonly message: string;
+}
+
+export interface DeliveryOperationEvent extends DomainEventBase {
+  readonly type:
+    | typeof DELIVERY_EVENTS.OPERATION_STARTED
+    | typeof DELIVERY_EVENTS.OPERATION_COMPLETED
+    | typeof DELIVERY_EVENTS.OPERATION_FAILED;
+  readonly nodeId: string;
+  readonly operationId: string;
+  readonly operationKind: string;
+  readonly artifactPath?: string;
+  readonly durationMs?: number;
+  readonly message?: string;
+}
+
+export interface DeliveryArtifactProducedEvent extends DomainEventBase {
+  readonly type: typeof DELIVERY_EVENTS.ARTIFACT_PRODUCED;
+  readonly nodeId: string;
+  readonly artifactPath: string;
+  readonly operationKind: string;
+}
+
+export interface DeliveryMetricRecordedEvent extends DomainEventBase {
+  readonly type: typeof DELIVERY_EVENTS.METRIC_RECORDED;
+  readonly nodeId: string;
+  readonly exportTimeMs: number;
+  readonly exportSizeBytes: number;
+  readonly validationScore: number;
+  readonly warningCount: number;
+}
+
 export type DomainEvent =
   | WorkflowLifecycleEvent
   | WorkflowStateChangedEvent
@@ -450,7 +528,15 @@ export type DomainEvent =
   | TemporalComposedEvent
   | TemporalOperationEvent
   | TemporalArtifactProducedEvent
-  | TemporalSegmentArtifactEvent;
+  | TemporalSegmentArtifactEvent
+  | DeliveryPackagingStartedEvent
+  | DeliveryPackagingCompletedEvent
+  | DeliveryValidationCompletedEvent
+  | DeliveryProjectArchivedEvent
+  | DeliveryExportFailedEvent
+  | DeliveryOperationEvent
+  | DeliveryArtifactProducedEvent
+  | DeliveryMetricRecordedEvent;
 
 export type DomainEventType = DomainEvent['type'];
 

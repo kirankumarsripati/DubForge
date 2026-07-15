@@ -16,9 +16,9 @@ import {
 } from '@dubforge/voice-performance';
 import {
   createTemporalPlatform,
-  createPlatformAdapterRegistry,
   createVoicePerformanceReaderFromRepository,
 } from '@dubforge/temporal';
+import { createDeliveryPlatform, createPlatformAdapterRegistry } from '@dubforge/delivery';
 import { createTranscriptionPlatform } from '@dubforge/transcription';
 import type { ExtensionRuntime } from '@dubforge/providers';
 import {
@@ -39,6 +39,7 @@ export interface PlatformStack {
   readonly localizationPlatform: ReturnType<typeof createLocalizationPlatform>;
   readonly voicePerformancePlatform: ReturnType<typeof createVoicePerformancePlatform>;
   readonly temporalPlatform: ReturnType<typeof createTemporalPlatform>;
+  readonly deliveryPlatform: ReturnType<typeof createDeliveryPlatform>;
   readonly observabilityPlatform: ReturnType<typeof createObservabilityPlatform>;
   readonly resourcePlatform: ReturnType<typeof createResourcePlatform>;
   dispose(): void;
@@ -55,6 +56,7 @@ export interface PlatformStackOptions {
   readonly useFixtureLocalizationAdapters?: boolean;
   readonly useFixtureVoicePerformanceAdapters?: boolean;
   readonly useFixtureTemporalAdapters?: boolean;
+  readonly useFixtureDeliveryAdapters?: boolean;
 }
 
 export function createPlatformStack(options: PlatformStackOptions): PlatformStack {
@@ -123,12 +125,21 @@ export function createPlatformStack(options: PlatformStackOptions): PlatformStac
     ),
   });
 
+  const deliveryPlatform = createDeliveryPlatform({
+    rootPath: join(options.rootPath, 'delivery'),
+    eventBus,
+    artifactSink: artifactPlatform.getArtifactSink(),
+    extensionRuntime: options.extensionRuntime,
+    useFixtureAdapters: options.useFixtureDeliveryAdapters,
+  });
+
   const adapterRegistry = createPlatformAdapterRegistry({
     mediaExecutionAdapter: mediaPlatform.createExecutionAdapter(),
     transcriptionExecutionAdapter: transcriptionPlatform.createExecutionAdapter(),
     localizationExecutionAdapter: localizationPlatform.createExecutionAdapter(),
     voicePerformanceExecutionAdapter: voicePerformancePlatform.createExecutionAdapter(),
     temporalExecutionAdapter: temporalPlatform.createExecutionAdapter(),
+    deliveryExecutionAdapter: deliveryPlatform.createExecutionAdapter(),
   });
 
   const executionPlatform = createExecutionPlatform({
@@ -158,10 +169,12 @@ export function createPlatformStack(options: PlatformStackOptions): PlatformStac
     localizationPlatform,
     voicePerformancePlatform,
     temporalPlatform,
+    deliveryPlatform,
     observabilityPlatform,
     resourcePlatform,
     dispose(): void {
       observabilityPlatform.dispose();
+      deliveryPlatform.close();
       temporalPlatform.close();
       voicePerformancePlatform.close();
       localizationPlatform.close();

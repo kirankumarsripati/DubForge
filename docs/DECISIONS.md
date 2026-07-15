@@ -516,6 +516,39 @@ Planned for Version 1.1
 
 ---
 
+## ADR-021
+
+Title
+
+Delivery Platform Owns All Exports
+
+Status
+
+Accepted
+
+Date
+
+2026-07-15
+
+Decision
+
+All production exports flow through `@dubforge/delivery`.
+
+The Workflow Engine never writes deliverables directly.
+
+Reason
+
+- Consistent validation
+- Packaging plans before mutation
+- Restorable project bundles
+- Centralized observability
+
+Consequences
+
+`verify` and `manifest` pipeline nodes are implemented by the delivery execution adapter.
+
+---
+
 # ADR Template
 
 ## ADR-XXX

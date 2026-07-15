@@ -67,7 +67,7 @@ export function serializeNodeExecutionState(
     completedAt: state.completedAt,
     durationMs: state.durationMs,
     error: state.error,
-    artifacts: [...state.artifacts],
+    artifacts: { ...state.artifacts },
     progress: state.progress,
   };
 }
@@ -83,7 +83,7 @@ export function deserializeNodeExecutionState(
     completedAt: state.completedAt,
     durationMs: state.durationMs,
     error: state.error,
-    artifacts: [...state.artifacts],
+    artifacts: { ...state.artifacts },
     progress: state.progress,
   };
 }

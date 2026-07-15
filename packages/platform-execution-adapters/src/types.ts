@@ -10,6 +10,7 @@ export const EXECUTION_ADAPTER_KINDS = {
   LOCALIZATION: 'localization',
   VOICE_PERFORMANCE: 'voice-performance',
   TEMPORAL: 'temporal',
+  DELIVERY: 'delivery',
   MOCK: 'mock',
 } as const;
 

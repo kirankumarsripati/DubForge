@@ -598,6 +598,68 @@ Output Summary
 
 ---
 
+# Milestone 7b — Delivery
+
+TASK-064a
+
+Delivery Platform
+
+Status: Complete
+
+Acceptance Criteria
+
+✓ `@dubforge/delivery` package with DDD structure
+
+✓ Verify and manifest pipeline nodes routed through delivery adapter
+
+✓ Packaging plan flow (generate → validate → preview → execute → verify → complete)
+
+✓ SQLite persistence for deliverables, validation reports, export history
+
+---
+
+TASK-064b
+
+Export Profiles
+
+Status: Complete
+
+Acceptance Criteria
+
+✓ JSON-driven built-in profiles (Studio Archive, YouTube, Plex, Jellyfin, Local Playback, Mobile, Audio Only)
+
+✓ Extensible profile loader
+
+---
+
+TASK-064c
+
+Project Bundle
+
+Status: Complete
+
+Acceptance Criteria
+
+✓ Versioned `.dubforge` project bundle with timeline, workflow, settings, localization, artifacts, report, diagnostics, export-history
+
+✓ Restorable archive structure
+
+---
+
+TASK-064d
+
+Deliverable Validation
+
+Status: Complete
+
+Acceptance Criteria
+
+✓ Playability, streams, metadata, duration, language tags, checksums, container checks
+
+✓ Invalid deliverables never marked complete
+
+✓ Domain events and export metrics emitted
+
 # Milestone 8 — Polish
 
 TASK-065

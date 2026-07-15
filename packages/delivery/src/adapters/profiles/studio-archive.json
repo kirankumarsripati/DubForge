@@ -1,0 +1,25 @@
+{
+  "id": "studio-archive",
+  "label": "Studio Archive",
+  "version": "1.0.0",
+  "deliverables": [
+    {
+      "kind": "mkv",
+      "container": "mkv",
+      "embedSubtitles": true,
+      "exportSrt": true,
+      "exportTranscript": true,
+      "includeProjectBundle": true,
+      "includeValidationReport": true
+    },
+    {
+      "kind": "subtitle-package",
+      "container": null,
+      "embedSubtitles": false,
+      "exportSrt": true,
+      "exportTranscript": false,
+      "includeProjectBundle": false,
+      "includeValidationReport": false
+    }
+  ]
+}

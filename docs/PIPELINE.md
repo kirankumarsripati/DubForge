@@ -73,6 +73,10 @@ Verification
 
 ↓
 
+Delivery & Packaging
+
+↓
+
 Completed
 
 ---
@@ -339,6 +343,8 @@ No re-encoding of video.
 
 # 16. Stage 14 — Verification
 
+Handled by `@dubforge/delivery` (`verify` node).
+
 Verify
 
 Video exists
@@ -357,11 +363,29 @@ Track count
 
 Language tags
 
+Only then proceed to packaging.
+
+---
+
+# 17. Stage 15 — Delivery & Packaging
+
+Handled by `@dubforge/delivery` (`manifest` node).
+
+Generate packaging plan
+
+Export deliverables
+
+Validate outputs
+
+Archive project bundle
+
+Register artifacts
+
 Only then mark completed.
 
 ---
 
-# 17. Pipeline Artifacts
+# 18. Pipeline Artifacts
 
 Every stage produces files.
 

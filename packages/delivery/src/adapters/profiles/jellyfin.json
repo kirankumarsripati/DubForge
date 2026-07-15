@@ -1,0 +1,16 @@
+{
+  "id": "jellyfin",
+  "label": "Jellyfin",
+  "version": "1.0.0",
+  "deliverables": [
+    {
+      "kind": "mkv",
+      "container": "mkv",
+      "embedSubtitles": true,
+      "exportSrt": false,
+      "exportTranscript": false,
+      "includeProjectBundle": false,
+      "includeValidationReport": true
+    }
+  ]
+}

@@ -124,20 +124,21 @@ Logging
 dubforge/
 
 apps/
-    desktop/
+desktop/
 
 packages/
-    pipeline/
-    providers/
-    shared/
-    types/
-    ui/
+pipeline/
+providers/
+shared/
+types/
+ui/
+delivery/
 
 python/
-    workers/
-    providers/
-    utils/
-    models/
+workers/
+providers/
+utils/
+models/
 
 docs/
 

@@ -1,0 +1,16 @@
+{
+  "id": "local-playback",
+  "label": "Local Playback",
+  "version": "1.0.0",
+  "deliverables": [
+    {
+      "kind": "mkv",
+      "container": "mkv",
+      "embedSubtitles": true,
+      "exportSrt": false,
+      "exportTranscript": true,
+      "includeProjectBundle": false,
+      "includeValidationReport": true
+    }
+  ]
+}

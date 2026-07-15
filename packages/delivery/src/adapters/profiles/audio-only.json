@@ -1,0 +1,16 @@
+{
+  "id": "audio-only",
+  "label": "Audio Only",
+  "version": "1.0.0",
+  "deliverables": [
+    {
+      "kind": "audio-only",
+      "container": null,
+      "embedSubtitles": false,
+      "exportSrt": false,
+      "exportTranscript": true,
+      "includeProjectBundle": false,
+      "includeValidationReport": true
+    }
+  ]
+}

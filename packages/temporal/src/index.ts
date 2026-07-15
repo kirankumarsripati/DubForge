@@ -60,10 +60,7 @@ export {
   TEMPORAL_NODE_KINDS,
   isTemporalNodeKind,
 } from './integration/temporal-execution-adapter.js';
-export {
-  createPlatformAdapterRegistry,
-  resolveGoldenFixturePath,
-} from './integration/adapter-registry.js';
+export { resolveGoldenFixturePath } from './integration/adapter-registry.js';
 
 export {
   createTemporalPlatform,

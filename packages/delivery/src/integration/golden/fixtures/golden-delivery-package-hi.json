@@ -1,0 +1,18 @@
+{
+  "durationMs": 5000,
+  "trackCount": 3,
+  "languageTags": ["en", "hi"],
+  "subtitleCount": 2,
+  "artifactKeys": ["packaging-plan", "delivery-aggregate", "deliverable:mkv"],
+  "bundleFiles": [
+    "bundle.json",
+    "timeline.json",
+    "workflow.json",
+    "settings.json",
+    "localization.json",
+    "report.json",
+    "diagnostics.json",
+    "export-history.json",
+    "artifacts/manifest.json"
+  ]
+}

@@ -41,7 +41,7 @@ export interface NodeExecutionState {
   readonly completedAt: string | null;
   readonly durationMs: number | null;
   readonly error: string | null;
-  readonly artifacts: readonly string[];
+  readonly artifacts: Readonly<Record<string, string>>;
   readonly progress: number;
 }
 
@@ -91,7 +91,7 @@ export interface SerializedNodeExecutionState {
   readonly completedAt: string | null;
   readonly durationMs: number | null;
   readonly error: string | null;
-  readonly artifacts: readonly string[];
+  readonly artifacts: Readonly<Record<string, string>>;
   readonly progress: number;
 }
 

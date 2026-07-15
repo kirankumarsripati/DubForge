@@ -1,0 +1,8 @@
+{
+  "outputPath": "/tmp/output/output.mkv",
+  "sizeBytes": 1024,
+  "durationMs": 5000,
+  "checksum": "abc123",
+  "languageTags": ["en", "hi"],
+  "trackCount": 3
+}

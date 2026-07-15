@@ -48,9 +48,8 @@ function collectArtifacts(state: WorkflowState): Record<string, string> {
   const artifacts: Record<string, string> = {};
 
   for (const nodeState of state.nodeStates.values()) {
-    for (const artifactPath of nodeState.artifacts) {
-      const fileName = artifactPath.split('/').pop() ?? artifactPath;
-      artifacts[fileName] = artifactPath;
+    for (const [artifactKey, artifactPath] of Object.entries(nodeState.artifacts)) {
+      artifacts[artifactKey] = artifactPath;
     }
   }
 
@@ -353,7 +352,7 @@ export class Scheduler {
           status: NODE_STATUSES.COMPLETED,
           completedAt,
           durationMs: result.durationMs,
-          artifacts: Object.values(result.artifacts),
+          artifacts: { ...result.artifacts },
           progress: 100,
           error: null,
         });
