@@ -9,6 +9,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src/renderer/src'),
+      '@dubforge/job-config': resolve(__dirname, '../../packages/job-config/src'),
       '@dubforge/ui': resolve(__dirname, '../../packages/ui/src'),
     },
   },

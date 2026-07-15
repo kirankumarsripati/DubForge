@@ -1,32 +1,47 @@
 import type {
+  JobDefinition,
+  JobEstimation,
+  JobPreset,
+  JobValidationResult,
+} from '@dubforge/job-config';
+import type {
   AppInfo,
   AsyncState,
   Job,
-  LocalizationLanguage,
-  OutputOptions,
   RecentVideoFile,
   TranslationProfile,
   VideoImportError,
   VideoMetadata,
 } from '@dubforge/types';
+import {
+  createJobDefinition,
+  setLanguageVoice,
+  setOutputConfiguration,
+  setTranslationProfile,
+  toggleLanguageSelection,
+  updateJobDefinition,
+} from '@dubforge/job-config';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { appService, MOCK_LANGUAGES, pipelineService, videoService } from '../services';
+import { appService, pipelineService, videoService } from '../services';
+import { estimationService, presetService, validationService } from '../services/job-config';
 import { isVideoImportError } from '../services/video-import-error';
 import { VideoImportRejectedError } from '../services/ipc/video-import-result';
 
 interface HomeStoreState {
   readonly appInfo: AsyncState<AppInfo>;
-  readonly selectedVideo: VideoMetadata | null;
-  readonly languages: readonly LocalizationLanguage[];
-  readonly profile: TranslationProfile;
-  readonly output: OutputOptions;
+  readonly jobDefinition: JobDefinition;
+  readonly estimation: JobEstimation;
+  readonly validation: JobValidationResult;
+  readonly presets: readonly JobPreset[];
+  readonly activePresetId: string | null;
   readonly activeJob: Job | null;
   readonly isStarting: boolean;
   readonly startError: string | null;
   readonly isImporting: boolean;
   readonly importError: VideoImportError | null;
   readonly recentFiles: readonly RecentVideoFile[];
+  readonly previewingVoiceId: string | null;
   fetchAppInfo: () => Promise<void>;
   selectVideo: () => Promise<void>;
   inspectDroppedFile: (file: File) => Promise<void>;
@@ -35,19 +50,38 @@ interface HomeStoreState {
   clearImportError: () => void;
   toggleLanguage: (code: string) => void;
   setProfile: (profile: TranslationProfile) => void;
-  setOutput: (output: Partial<OutputOptions>) => void;
+  setOutput: (partial: Parameters<typeof setOutputConfiguration>[1]) => void;
+  setVoice: (languageCode: string, voiceId: string) => void;
+  applyPreset: (presetId: string) => void;
   startLocalization: () => Promise<void>;
   fetchActiveJob: () => Promise<void>;
   fetchRecentFiles: () => Promise<void>;
+  refreshJobConfig: () => void;
+  syncOutputDirectory: (outputDirectory: string) => void;
 }
 
-const defaultOutput: OutputOptions = {
-  generateTranslatedAudio: true,
-  generateSubtitles: true,
-  embedSubtitles: true,
-  exportSrt: false,
-  exportTranscript: true,
-};
+function computeDerivedState(definition: JobDefinition): {
+  estimation: JobEstimation;
+  validation: JobValidationResult;
+} {
+  return {
+    estimation: estimationService.estimate(definition),
+    validation: validationService.validate(definition),
+  };
+}
+
+function withDefinition(
+  definition: JobDefinition,
+  presets: readonly JobPreset[],
+): Pick<HomeStoreState, 'jobDefinition' | 'estimation' | 'validation' | 'presets'> {
+  const derived = computeDerivedState(definition);
+  return {
+    jobDefinition: definition,
+    estimation: derived.estimation,
+    validation: derived.validation,
+    presets,
+  };
+}
 
 async function importVideo(
   importer: () => Promise<VideoMetadata | null>,
@@ -63,11 +97,13 @@ async function importVideo(
       return;
     }
 
+    const nextDefinition = updateJobDefinition(get().jobDefinition, { video: metadata });
     set({
-      selectedVideo: metadata,
+      ...withDefinition(nextDefinition, get().presets),
       isImporting: false,
       importError: null,
       startError: null,
+      activePresetId: null,
     });
     await get().fetchRecentFiles();
   } catch (error) {
@@ -88,20 +124,25 @@ async function importVideo(
   }
 }
 
+const initialDefinition = createJobDefinition();
+const initialDerived = computeDerivedState(initialDefinition);
+
 export const useHomeStore = create<HomeStoreState>()(
   devtools(
     (set, get) => ({
       appInfo: { status: 'idle', data: null, error: null },
-      selectedVideo: null,
-      languages: MOCK_LANGUAGES,
-      profile: 'balanced',
-      output: defaultOutput,
+      jobDefinition: initialDefinition,
+      estimation: initialDerived.estimation,
+      validation: initialDerived.validation,
+      presets: presetService.listPresets(),
+      activePresetId: null,
       activeJob: null,
       isStarting: false,
       startError: null,
       isImporting: false,
       importError: null,
       recentFiles: [],
+      previewingVoiceId: null,
       fetchAppInfo: async () => {
         set({ appInfo: { status: 'loading', data: null, error: null } });
         try {
@@ -129,40 +170,80 @@ export const useHomeStore = create<HomeStoreState>()(
         await importVideo(() => videoService.openRecentFile(id), set, get);
       },
       clearVideo: () => {
-        set({ selectedVideo: null, activeJob: null, startError: null, importError: null });
+        const nextDefinition = updateJobDefinition(get().jobDefinition, { video: null });
+        set({
+          ...withDefinition(nextDefinition, get().presets),
+          activeJob: null,
+          startError: null,
+          importError: null,
+          activePresetId: null,
+        });
       },
       clearImportError: () => {
         set({ importError: null });
       },
       toggleLanguage: (code) => {
+        const nextDefinition = toggleLanguageSelection(get().jobDefinition, code);
         set({
-          languages: get().languages.map((lang) =>
-            lang.code === code ? { ...lang, enabled: !lang.enabled } : lang,
-          ),
+          ...withDefinition(nextDefinition, get().presets),
+          activePresetId: null,
         });
       },
       setProfile: (profile) => {
-        set({ profile });
+        const nextDefinition = setTranslationProfile(get().jobDefinition, profile);
+        set({
+          ...withDefinition(nextDefinition, get().presets),
+          activePresetId: null,
+        });
       },
       setOutput: (partial) => {
-        set({ output: { ...get().output, ...partial } });
+        const nextDefinition = setOutputConfiguration(get().jobDefinition, partial);
+        set({
+          ...withDefinition(nextDefinition, get().presets),
+          activePresetId: null,
+        });
       },
-      startLocalization: async () => {
-        const video = get().selectedVideo;
-        if (!video) {
+      setVoice: (languageCode, voiceId) => {
+        const nextDefinition = setLanguageVoice(get().jobDefinition, languageCode, voiceId);
+        set({
+          ...withDefinition(nextDefinition, get().presets),
+          activePresetId: null,
+        });
+      },
+      applyPreset: (presetId) => {
+        const preset = presetService.getPreset(presetId);
+        if (preset === null) {
           return;
         }
-        const enabledLanguages = get()
-          .languages.filter((lang) => lang.enabled)
-          .map((lang) => lang.code);
+
+        const nextDefinition = presetService.applyPreset(preset, get().jobDefinition);
+        set({
+          ...withDefinition(nextDefinition, get().presets),
+          activePresetId: presetId,
+        });
+      },
+      startLocalization: async () => {
+        const definition = get().jobDefinition;
+        const validation = validationService.validate(definition);
+        set({ validation });
+
+        if (!validation.valid || definition.video === null) {
+          return;
+        }
+
+        const enabledLanguages = definition.languages
+          .filter((language) => language.enabled)
+          .map((language) => language.code);
 
         set({ isStarting: true, startError: null });
         try {
           const job = await pipelineService.startJob({
-            video,
+            video: definition.video,
             languages: enabledLanguages,
-            profile: get().profile,
-            output: get().output,
+            voices: definition.voices,
+            profile: definition.profile,
+            output: definition.output,
+            outputDirectory: definition.outputDirectory,
           });
           set({ activeJob: job, isStarting: false });
         } catch (error) {
@@ -177,6 +258,13 @@ export const useHomeStore = create<HomeStoreState>()(
       fetchRecentFiles: async () => {
         const recentFiles = await videoService.listRecentFiles();
         set({ recentFiles });
+      },
+      refreshJobConfig: () => {
+        set(withDefinition(get().jobDefinition, presetService.listPresets()));
+      },
+      syncOutputDirectory: (outputDirectory) => {
+        const nextDefinition = updateJobDefinition(get().jobDefinition, { outputDirectory });
+        set(withDefinition(nextDefinition, get().presets));
       },
     }),
     { name: 'home-store' },

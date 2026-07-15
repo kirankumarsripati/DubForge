@@ -1,22 +1,29 @@
-import { Button, ErrorState } from '@dubforge/ui';
-import { useEffect } from 'react';
+import { ErrorState } from '@dubforge/ui';
+import { MOCK_VOICES, setTranslationProfile, TRANSLATION_PROFILES } from '@dubforge/job-config';
+import type { TranslationProfile } from '@dubforge/types';
+import { useEffect, useMemo } from 'react';
 import { ActiveJobCard } from '../components/home/ActiveJobCard';
 import { ImportCard } from '../components/home/ImportCard';
 import { LocalizationCard } from '../components/home/LocalizationCard';
 import { OutputOptionsCard } from '../components/home/OutputOptionsCard';
+import { PresetCard } from '../components/home/PresetCard';
 import { ProfileCard } from '../components/home/ProfileCard';
 import { RecentFilesCard } from '../components/home/RecentFilesCard';
+import { ReviewPanel } from '../components/home/ReviewPanel';
 import { VideoInfoCard } from '../components/home/VideoInfoCard';
+import { VoiceSelectionCard } from '../components/home/VoiceSelectionCard';
 import { PageHeader } from '../components/layout/PageHeader';
 import { pipelineService } from '../services';
+import { estimationService } from '../services/job-config';
 import { useHomeStore } from '../stores/home-store';
 import { useSettingsStore } from '../stores/settings-store';
 
 export function HomePage(): React.JSX.Element {
-  const selectedVideo = useHomeStore((state) => state.selectedVideo);
-  const languages = useHomeStore((state) => state.languages);
-  const profile = useHomeStore((state) => state.profile);
-  const output = useHomeStore((state) => state.output);
+  const jobDefinition = useHomeStore((state) => state.jobDefinition);
+  const estimation = useHomeStore((state) => state.estimation);
+  const validation = useHomeStore((state) => state.validation);
+  const presets = useHomeStore((state) => state.presets);
+  const activePresetId = useHomeStore((state) => state.activePresetId);
   const activeJob = useHomeStore((state) => state.activeJob);
   const isStarting = useHomeStore((state) => state.isStarting);
   const startError = useHomeStore((state) => state.startError);
@@ -29,9 +36,12 @@ export function HomePage(): React.JSX.Element {
   const toggleLanguage = useHomeStore((state) => state.toggleLanguage);
   const setProfile = useHomeStore((state) => state.setProfile);
   const setOutput = useHomeStore((state) => state.setOutput);
+  const setVoice = useHomeStore((state) => state.setVoice);
+  const applyPreset = useHomeStore((state) => state.applyPreset);
   const startLocalization = useHomeStore((state) => state.startLocalization);
   const fetchActiveJob = useHomeStore((state) => state.fetchActiveJob);
   const fetchRecentFiles = useHomeStore((state) => state.fetchRecentFiles);
+  const syncOutputDirectory = useHomeStore((state) => state.syncOutputDirectory);
   const settings = useSettingsStore((state) => state.settings.data);
 
   useEffect(() => {
@@ -53,12 +63,29 @@ export function HomePage(): React.JSX.Element {
     };
   }, [selectVideo]);
 
-  const outputDirectory = settings?.outputDirectory ?? '~/Movies/DubForge';
-  const enabledCount = languages.filter((lang) => lang.enabled).length;
+  useEffect(() => {
+    if (settings?.outputDirectory !== undefined) {
+      syncOutputDirectory(settings.outputDirectory);
+    }
+  }, [settings?.outputDirectory, syncOutputDirectory]);
+
+  const outputDirectory = settings?.outputDirectory ?? jobDefinition.outputDirectory;
+
+  const profileEstimates = useMemo(() => {
+    const profiles: TranslationProfile[] = ['fast', 'balanced', 'studio'];
+    return Object.fromEntries(
+      profiles.map((profile) => [
+        profile,
+        estimationService.estimate(setTranslationProfile(jobDefinition, profile)),
+      ]),
+    ) as Record<TranslationProfile, typeof estimation>;
+  }, [jobDefinition]);
+
+  const selectedVideo = jobDefinition.video;
 
   return (
     <div className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8">
-      <div className="mx-auto w-full max-w-3xl">
+      <div className="mx-auto w-full max-w-6xl">
         <PageHeader
           title="DubForge"
           description="Translate, dub and localize videos completely offline."
@@ -92,47 +119,42 @@ export function HomePage(): React.JSX.Element {
         {!selectedVideo ? <ImportCard /> : null}
 
         {selectedVideo ? (
-          <div className="space-y-6">
-            <VideoInfoCard
-              video={selectedVideo}
-              outputDirectory={outputDirectory}
-              onChangeVideo={clearVideo}
-            />
-            <LocalizationCard languages={languages} onToggle={toggleLanguage} />
-            <ProfileCard selected={profile} onSelect={setProfile} />
-            <OutputOptionsCard options={output} onChange={setOutput} />
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+            <div className="space-y-6">
+              <VideoInfoCard
+                video={selectedVideo}
+                outputDirectory={outputDirectory}
+                onChangeVideo={clearVideo}
+              />
+              <LocalizationCard languages={jobDefinition.languages} onToggle={toggleLanguage} />
+              <VoiceSelectionCard
+                languages={jobDefinition.languages}
+                voices={jobDefinition.voices}
+                availableVoices={MOCK_VOICES}
+                onVoiceChange={setVoice}
+              />
+              <ProfileCard
+                profiles={TRANSLATION_PROFILES}
+                selected={jobDefinition.profile}
+                estimation={profileEstimates[jobDefinition.profile]}
+                profileEstimates={profileEstimates}
+                onSelect={setProfile}
+              />
+              <OutputOptionsCard options={jobDefinition.output} onChange={setOutput} />
+            </div>
 
-            {startError ? (
-              <ErrorState
-                title="Localization failed to start"
-                description={startError}
-                recoveryAction="Check that all required models are installed, then try again."
-                onRetry={() => {
+            <div className="space-y-6">
+              <PresetCard presets={presets} activePresetId={activePresetId} onApply={applyPreset} />
+              <ReviewPanel
+                definition={{ ...jobDefinition, outputDirectory }}
+                estimation={estimation}
+                validation={validation}
+                isStarting={isStarting}
+                startError={startError}
+                onStart={() => {
                   void startLocalization();
                 }}
               />
-            ) : null}
-
-            <div className="bg-card border-border rounded-2xl border p-6">
-              <p className="text-muted-foreground mb-4 text-sm">
-                Estimated output: MKV with {enabledCount} language track
-                {enabledCount === 1 ? '' : 's'} and embedded subtitles.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  size="lg"
-                  disabled={isStarting || enabledCount === 0}
-                  onClick={() => {
-                    void startLocalization();
-                  }}
-                  aria-label="Start localization"
-                >
-                  {isStarting ? 'Starting…' : 'Start Localization'}
-                </Button>
-                <Button variant="outline" size="lg" disabled={isStarting}>
-                  Preview First Minute
-                </Button>
-              </div>
             </div>
           </div>
         ) : (

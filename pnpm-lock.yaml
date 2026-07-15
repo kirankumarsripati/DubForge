@@ -47,6 +47,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@dubforge/job-config':
+        specifier: workspace:*
+        version: link:../../packages/job-config
       '@dubforge/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -123,6 +126,19 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(yaml@2.9.0)
+
+  packages/job-config:
+    dependencies:
+      '@dubforge/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@26.1.1)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(yaml@2.9.0)
 
   packages/pipeline:
     devDependencies:

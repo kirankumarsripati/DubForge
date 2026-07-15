@@ -7,6 +7,7 @@
     "types": ["node", "vitest/globals"],
     "baseUrl": ".",
     "paths": {
+      "@dubforge/job-config": ["packages/job-config/src/index.ts"],
       "@dubforge/types": ["packages/types/src/index.ts"],
       "@dubforge/shared": ["packages/shared/src/index.ts"],
       "@dubforge/pipeline": ["packages/pipeline/src/index.ts"],

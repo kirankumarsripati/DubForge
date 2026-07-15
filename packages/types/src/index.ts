@@ -104,6 +104,7 @@ export interface LocalizationLanguage {
   readonly code: string;
   readonly label: string;
   readonly enabled: boolean;
+  readonly isSource?: boolean;
 }
 
 export interface OutputOptions {
@@ -117,8 +118,10 @@ export interface OutputOptions {
 export interface StartJobRequest {
   readonly video: VideoMetadata;
   readonly languages: readonly string[];
+  readonly voices: Readonly<Record<string, string>>;
   readonly profile: TranslationProfile;
   readonly output: OutputOptions;
+  readonly outputDirectory: string;
 }
 
 export interface AppInfo {

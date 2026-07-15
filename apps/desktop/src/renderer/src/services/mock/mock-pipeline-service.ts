@@ -41,7 +41,7 @@ export class MockPipelineService implements PipelineService {
       startedAt: new Date().toISOString(),
       finishedAt: null,
       durationSeconds: null,
-      outputPath: null,
+      outputPath: request.outputDirectory,
       stages: initialStages,
       error: null,
     };

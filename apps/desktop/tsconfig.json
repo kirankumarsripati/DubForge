@@ -10,6 +10,7 @@
     "paths": {
       "@/*": ["src/renderer/src/*"],
       "@dubforge/shared": ["../../packages/shared/src"],
+      "@dubforge/job-config": ["../../packages/job-config/src"],
       "@dubforge/types": ["../../packages/types/src"],
       "@dubforge/ui": ["../../packages/ui/src"],
       "@dubforge/ui/*": ["../../packages/ui/src/*"]
