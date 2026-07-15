@@ -1,0 +1,34 @@
+{
+  "name": "@dubforge/platform-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dubforge/pipeline": "workspace:*",
+    "@dubforge/platform-artifact": "workspace:*",
+    "@dubforge/platform-events": "workspace:*",
+    "@dubforge/platform-execution": "workspace:*",
+    "@dubforge/platform-execution-adapters": "workspace:*",
+    "@dubforge/platform-observability": "workspace:*",
+    "@dubforge/platform-resource": "workspace:*"
+  },
+  "devDependencies": {
+    "@dubforge/job-config": "workspace:*",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}

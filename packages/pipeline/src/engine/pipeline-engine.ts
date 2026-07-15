@@ -1,17 +1,19 @@
-import type { ExtensionRuntime } from '@dubforge/providers';
+import type { DomainEventBus } from '@dubforge/platform-events';
+import type { NodeExecutionPort } from '@dubforge/platform-execution';
 import type { Job, PipelineStageStatus, WorkflowTimelineNode } from '@dubforge/types';
 import { compileWorkflow, type WorkflowCompileInput } from '../compiler/workflow-compiler';
 import { validateDagGraph } from '../dag/validator';
 import type { NodeExecutionState, WorkflowState } from '../dag/types';
 import { NODE_STATUSES, WORKFLOW_STATUSES } from '../dag/types';
 import { createWorkflowEventBus, type WorkflowEventBus } from '../events/event-bus';
-import type { WorkflowStore } from '../persistence/workflow-store';
-import { createStageRunner, createWorkflowState, type StageRunner } from '../runner/stage-runner';
+import type { WorkflowStatePort } from '../ports/workflow-state-port';
+import { createWorkflowState } from '../runner/stage-runner';
 import { Scheduler, type SchedulerInput } from '../scheduler/scheduler';
 
 export interface PipelineEngineOptions {
-  readonly runtime: ExtensionRuntime;
-  readonly store: WorkflowStore;
+  readonly executor: NodeExecutionPort;
+  readonly statePort: WorkflowStatePort;
+  readonly domainEventBus?: DomainEventBus;
   readonly maxConcurrency?: number;
 }
 
@@ -189,14 +191,11 @@ export function workflowStateToJob(
 }
 
 export class PipelineEngine {
-  private readonly runner: StageRunner;
   private readonly eventBus: WorkflowEventBus = createWorkflowEventBus();
   private activeScheduler: Scheduler | null = null;
   private activeState: WorkflowState | null = null;
 
-  constructor(private readonly options: PipelineEngineOptions) {
-    this.runner = createStageRunner(options.runtime);
-  }
+  constructor(private readonly options: PipelineEngineOptions) {}
 
   getEventBus(): WorkflowEventBus {
     return this.eventBus;
@@ -215,8 +214,9 @@ export class PipelineEngine {
     }
 
     const initialState = createWorkflowState(graph, request.artifactRoot);
-    const scheduler = new Scheduler(this.eventBus, this.options.store, {
+    const scheduler = new Scheduler(this.eventBus, this.options.statePort, {
       maxConcurrency: this.options.maxConcurrency,
+      domainEventBus: this.options.domainEventBus,
     });
 
     this.activeScheduler = scheduler;
@@ -233,20 +233,24 @@ export class PipelineEngine {
       outputDirectory: request.outputDirectory,
     };
 
-    const finalState = await scheduler.execute(initialState, this.runner, input);
+    const finalState = await scheduler.execute(initialState, this.options.executor, input);
     this.activeState = finalState;
     this.activeScheduler = null;
     return finalState;
   }
 
   async resume(request: StartWorkflowRequest): Promise<WorkflowState> {
-    const persisted = await this.options.store.load(request.workflowId, request.artifactRoot);
+    const persisted = await this.options.statePort.restore(
+      request.workflowId,
+      request.artifactRoot,
+    );
     if (persisted === null) {
       return this.start(request);
     }
 
-    const scheduler = new Scheduler(this.eventBus, this.options.store, {
+    const scheduler = new Scheduler(this.eventBus, this.options.statePort, {
       maxConcurrency: this.options.maxConcurrency,
+      domainEventBus: this.options.domainEventBus,
     });
 
     this.activeScheduler = scheduler;
@@ -263,7 +267,7 @@ export class PipelineEngine {
       outputDirectory: request.outputDirectory,
     };
 
-    const finalState = await scheduler.resume(persisted, this.runner, input);
+    const finalState = await scheduler.resume(persisted, this.options.executor, input);
     this.activeState = finalState;
     this.activeScheduler = null;
     return finalState;

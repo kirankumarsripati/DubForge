@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@dubforge/job-config": "workspace:*",
-    "@dubforge/providers": "workspace:*",
+    "@dubforge/platform-events": "workspace:*",
+    "@dubforge/platform-execution": "workspace:*",
     "@dubforge/types": "workspace:*"
   },
   "devDependencies": {

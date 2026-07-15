@@ -11,6 +11,15 @@
       "@dubforge/types": ["packages/types/src/index.ts"],
       "@dubforge/shared": ["packages/shared/src/index.ts"],
       "@dubforge/pipeline": ["packages/pipeline/src/index.ts"],
+      "@dubforge/platform-runtime": ["packages/platform-runtime/src/index.ts"],
+      "@dubforge/platform-events": ["packages/platform-events/src/index.ts"],
+      "@dubforge/platform-execution": ["packages/platform-execution/src/index.ts"],
+      "@dubforge/platform-execution-adapters": [
+        "packages/platform-execution-adapters/src/index.ts"
+      ],
+      "@dubforge/platform-artifact": ["packages/platform-artifact/src/index.ts"],
+      "@dubforge/platform-observability": ["packages/platform-observability/src/index.ts"],
+      "@dubforge/platform-resource": ["packages/platform-resource/src/index.ts"],
       "@dubforge/providers": ["packages/providers/src/index.ts"],
       "@dubforge/assets": ["packages/assets/src/index.ts"],
       "@dubforge/ui": ["packages/ui/src/index.ts"],

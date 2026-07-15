@@ -41,17 +41,21 @@ export {
 } from './events/event-bus';
 
 export {
-  FileWorkflowStore,
-  InMemoryWorkflowStore,
-  type WorkflowStore,
-} from './persistence/workflow-store';
+  publishWorkflowLifecycleEvent,
+  publishWorkflowNodeEvent,
+  publishWorkflowNodeProgress,
+  publishWorkflowStateChanged,
+} from './events/domain-events';
 
-export {
-  createInitialNodeStates,
-  createStageRunner,
-  createWorkflowState,
-  type StageRunner,
-} from './runner/stage-runner';
+export type { WorkflowStatePort } from './ports/workflow-state-port';
+export { InMemoryWorkflowStatePort } from './ports/in-memory-workflow-state-port';
+export type {
+  NodeExecutionPort,
+  NodeExecutionRequest,
+  NodeExecutionResult,
+} from './ports/node-execution-port';
+
+export { createInitialNodeStates, createWorkflowState } from './runner/stage-runner';
 
 export {
   buildResumeQueue,

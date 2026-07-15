@@ -46,10 +46,10 @@ function createWindow(): void {
   }
 }
 
-void app.whenReady().then(async () => {
+void app.whenReady().then(() => {
   app.setName('DubForge');
 
-  const container = await initializeApplicationContainer();
+  const container = initializeApplicationContainer();
   registerThumbnailProtocol(container);
   registerVideoIpcHandlers(container);
   registerPipelineIpcHandlers(container);

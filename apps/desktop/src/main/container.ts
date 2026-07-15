@@ -45,9 +45,9 @@ export function createApplicationContainer(): ServiceContainer {
   return container;
 }
 
-export async function initializeApplicationContainer(): Promise<ServiceContainer> {
+export function initializeApplicationContainer(): ServiceContainer {
   const container = createApplicationContainer();
-  const pipelineService = await createPipelineJobService(
+  const pipelineService = createPipelineJobService(
     container.resolve(VIDEO_CACHE_SERVICE_TOKEN),
     join(app.getPath('userData'), 'jobs'),
   );

@@ -1,36 +1,5 @@
-import {
-  PIPELINE_STAGE_CAPABILITY,
-  type ExtensionRuntime,
-  type StageExecutionContext,
-  type StageExecutionResult,
-} from '@dubforge/providers';
-import type { DagNode, NodeExecutionState, NodeId, WorkflowState } from '../dag/types';
-import { NODE_STATUSES } from '../dag/types';
-
-export interface StageRunner {
-  run(
-    node: DagNode,
-    state: WorkflowState,
-    context: StageExecutionContext,
-  ): Promise<StageExecutionResult>;
-}
-
-export function createStageRunner(runtime: ExtensionRuntime): StageRunner {
-  return {
-    async run(
-      node: DagNode,
-      _state: WorkflowState,
-      context: StageExecutionContext,
-    ): Promise<StageExecutionResult> {
-      const handler = runtime.resolveCapability(PIPELINE_STAGE_CAPABILITY, node.kind);
-      await handler.initialize(context);
-      const result = await handler.execute(context);
-      await handler.validate(result);
-      await handler.cleanup();
-      return result;
-    },
-  };
-}
+import type { NodeExecutionState, NodeId, WorkflowState } from '../dag/types.js';
+import { NODE_STATUSES } from '../dag/types.js';
 
 export function createInitialNodeStates(
   graph: WorkflowState['graph'],

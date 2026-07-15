@@ -10,7 +10,13 @@ export default defineConfig({
         exclude: [
           '@dubforge/shared',
           '@dubforge/pipeline',
-          '@dubforge/providers',
+          '@dubforge/platform-runtime',
+          '@dubforge/platform-events',
+          '@dubforge/platform-execution',
+          '@dubforge/platform-execution-adapters',
+          '@dubforge/platform-artifact',
+          '@dubforge/platform-observability',
+          '@dubforge/platform-resource',
           '@dubforge/job-config',
           '@dubforge/types',
         ],
@@ -20,7 +26,19 @@ export default defineConfig({
       alias: {
         '@dubforge/shared': resolve(__dirname, '../../packages/shared/src'),
         '@dubforge/pipeline': resolve(__dirname, '../../packages/pipeline/src'),
-        '@dubforge/providers': resolve(__dirname, '../../packages/providers/src'),
+        '@dubforge/platform-runtime': resolve(__dirname, '../../packages/platform-runtime/src'),
+        '@dubforge/platform-events': resolve(__dirname, '../../packages/platform-events/src'),
+        '@dubforge/platform-execution': resolve(__dirname, '../../packages/platform-execution/src'),
+        '@dubforge/platform-execution-adapters': resolve(
+          __dirname,
+          '../../packages/platform-execution-adapters/src',
+        ),
+        '@dubforge/platform-artifact': resolve(__dirname, '../../packages/platform-artifact/src'),
+        '@dubforge/platform-observability': resolve(
+          __dirname,
+          '../../packages/platform-observability/src',
+        ),
+        '@dubforge/platform-resource': resolve(__dirname, '../../packages/platform-resource/src'),
         '@dubforge/job-config': resolve(__dirname, '../../packages/job-config/src'),
         '@dubforge/types': resolve(__dirname, '../../packages/types/src'),
       },
@@ -33,6 +51,7 @@ export default defineConfig({
         output: {
           format: 'cjs',
         },
+        external: ['better-sqlite3'],
       },
     },
   },

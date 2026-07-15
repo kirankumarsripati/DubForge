@@ -1,23 +1,22 @@
 import { describe, expect, it, vi } from 'vitest';
 import { compileWorkflow } from '../compiler/workflow-compiler';
 import { createWorkflowEventBus } from '../events/event-bus';
-import { InMemoryWorkflowStore } from '../persistence/workflow-store';
+import { InMemoryWorkflowStatePort } from '../ports/in-memory-workflow-state-port';
+import type { NodeExecutionPort } from '../ports/node-execution-port';
 import { createWorkflowState } from '../runner/stage-runner';
 import { Scheduler } from './scheduler';
 import { DEFAULT_OUTPUT_CONFIGURATION } from '@dubforge/job-config';
-import type { StageExecutionResult } from '@dubforge/providers';
 import type { DagNode, WorkflowState } from '../dag/types';
-import type { StageRunner } from '../runner/stage-runner';
 
-function createRunner(onRun: (node: DagNode) => void): StageRunner {
+function createExecutor(onRun: (node: DagNode) => void): NodeExecutionPort {
   return {
-    run: async (node): Promise<StageExecutionResult> => {
-      onRun(node);
+    execute: async (request) => {
+      onRun({ id: request.nodeId, kind: request.nodeKind } as DagNode);
       await new Promise((resolve) => {
         setTimeout(resolve, 20);
       });
       return {
-        artifacts: { [node.id]: `/tmp/${node.id}` },
+        artifacts: { [request.nodeId]: `/tmp/${request.nodeId}` },
         durationMs: 20,
       };
     },
@@ -40,13 +39,16 @@ describe('Scheduler', () => {
     });
 
     const state = createWorkflowState(graph, '/tmp/artifacts/scheduler');
-    const store = new InMemoryWorkflowStore();
+    const statePort = new InMemoryWorkflowStatePort();
     const eventBus = createWorkflowEventBus();
-    const scheduler = new Scheduler(eventBus, store, { maxConcurrency: 4, retryBaseDelayMs: 10 });
+    const scheduler = new Scheduler(eventBus, statePort, {
+      maxConcurrency: 4,
+      retryBaseDelayMs: 10,
+    });
 
     const runningCounts: number[] = [];
     let inFlight = 0;
-    const runner = createRunner(() => {
+    const executor = createExecutor(() => {
       inFlight += 1;
       runningCounts.push(inFlight);
       setTimeout(() => {
@@ -54,7 +56,7 @@ describe('Scheduler', () => {
       }, 20);
     });
 
-    const finalState = await scheduler.execute(state, runner, {
+    const finalState = await scheduler.execute(state, executor, {
       workflowId: graph.workflowId,
       jobId: graph.jobId,
       videoPath: '/tmp/video.mp4',
@@ -109,13 +111,13 @@ describe('Scheduler', () => {
       ]),
     };
 
-    const runner = createRunner(vi.fn());
-    const scheduler = new Scheduler(createWorkflowEventBus(), new InMemoryWorkflowStore(), {
+    const executor = createExecutor(vi.fn());
+    const scheduler = new Scheduler(createWorkflowEventBus(), new InMemoryWorkflowStatePort(), {
       maxConcurrency: 2,
       retryBaseDelayMs: 10,
     });
 
-    const finalState: WorkflowState = await scheduler.resume(state, runner, {
+    const finalState: WorkflowState = await scheduler.resume(state, executor, {
       workflowId: graph.workflowId,
       jobId: graph.jobId,
       videoPath: '/tmp/video.mp4',

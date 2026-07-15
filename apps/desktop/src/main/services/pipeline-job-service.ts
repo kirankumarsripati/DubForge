@@ -1,14 +1,5 @@
-import {
-  PipelineEngine,
-  FileWorkflowStore,
-  workflowStateToJob,
-  type StartWorkflowRequest,
-} from '@dubforge/pipeline';
-import {
-  createExtensionRuntime,
-  loadBuiltinExtensions,
-  type ExtensionRuntime,
-} from '@dubforge/providers';
+import { workflowStateToJob, type StartWorkflowRequest } from '@dubforge/pipeline';
+import { createPlatformStack, type PlatformStack } from '@dubforge/platform-runtime';
 import type { Job, StartJobRequest } from '@dubforge/types';
 import { createAppId } from '@dubforge/shared';
 import type { PipelineEventPayload } from '@dubforge/shared';
@@ -17,7 +8,7 @@ import { join } from 'node:path';
 import type { VideoCacheService } from './video-cache-service';
 
 export class PipelineJobService {
-  private readonly engine: PipelineEngine;
+  private readonly platformStack: PlatformStack;
   private activeJob: Job | null = null;
   private activeRequest: StartWorkflowRequest | null = null;
   private activeLanguages: readonly string[] = [];
@@ -27,15 +18,11 @@ export class PipelineJobService {
   constructor(
     private readonly cacheService: VideoCacheService,
     private readonly jobsRoot: string,
-    runtime: ExtensionRuntime,
+    platformStack: PlatformStack,
   ) {
-    this.engine = new PipelineEngine({
-      runtime,
-      store: new FileWorkflowStore(),
-      maxConcurrency: 4,
-    });
+    this.platformStack = platformStack;
 
-    this.engine.getEventBus().subscribe((event: WorkflowEvent) => {
+    this.platformStack.engine.getEventBus().subscribe((event: WorkflowEvent) => {
       this.eventPublisher?.({
         type: event.type,
         workflowId: event.workflowId,
@@ -104,6 +91,8 @@ export class PipelineJobService {
       error: null,
     };
 
+    void this.platformStack.resourcePlatform.captureSnapshot(this.jobsRoot);
+
     this.runPromise = this.runWorkflow(workflowRequest, request).finally(() => {
       this.runPromise = null;
     });
@@ -116,7 +105,8 @@ export class PipelineJobService {
       return;
     }
 
-    this.engine.cancel();
+    this.platformStack.engine.cancel();
+    this.platformStack.executionPlatform.cancelAll();
   }
 
   private async runWorkflow(
@@ -124,7 +114,7 @@ export class PipelineJobService {
     request: StartJobRequest,
   ): Promise<void> {
     try {
-      const finalState = await this.engine.start(workflowRequest);
+      const finalState = await this.platformStack.engine.start(workflowRequest);
       this.activeJob = workflowStateToJob(
         finalState,
         request.video.filename,
@@ -155,7 +145,7 @@ export class PipelineJobService {
   }
 
   private publishActiveJob(): void {
-    const state = this.engine.getActiveState();
+    const state = this.platformStack.engine.getActiveState();
     const request = this.activeRequest;
     if (state === null || request === null) {
       return;
@@ -170,11 +160,14 @@ export class PipelineJobService {
   }
 }
 
-export async function createPipelineJobService(
+export function createPipelineJobService(
   cacheService: VideoCacheService,
   jobsRoot: string,
-): Promise<PipelineJobService> {
-  const runtime = createExtensionRuntime();
-  await loadBuiltinExtensions(runtime);
-  return new PipelineJobService(cacheService, jobsRoot, runtime);
+): PipelineJobService {
+  const platformStack = createPlatformStack({
+    rootPath: join(jobsRoot, 'platform'),
+    maxConcurrency: 4,
+  });
+
+  return new PipelineJobService(cacheService, jobsRoot, platformStack);
 }

@@ -16,6 +16,7 @@
     "lint": "pnpm -r lint && pnpm lint:python",
     "lint:python": "cd python && .venv/bin/python -m ruff check . && .venv/bin/python -m black --check . && .venv/bin/python -m mypy .",
     "typecheck": "pnpm -r typecheck",
+    "pretest": "node scripts/rebuild-sqlite-for-node.mjs",
     "test": "pnpm -r test && pnpm test:python",
     "test:python": "cd python && .venv/bin/python -m pytest",
     "test:e2e": "pnpm --filter @dubforge/desktop test:e2e",

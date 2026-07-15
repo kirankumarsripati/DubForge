@@ -1,12 +1,19 @@
 import type { OutputConfiguration } from '@dubforge/job-config';
+import { WORKFLOW_EVENTS, type DomainEventBus } from '@dubforge/platform-events';
 import type { TranslationProfile } from '@dubforge/types';
 import { DEFAULT_MAX_CONCURRENCY, MAX_NODE_RETRIES, RETRY_BASE_DELAY_MS } from '../constants';
 import type { DagNode, NodeExecutionState, NodeId, WorkflowState } from '../dag/types';
 import { NODE_STATUSES, WORKFLOW_STATUSES } from '../dag/types';
+import {
+  publishWorkflowLifecycleEvent,
+  publishWorkflowNodeEvent,
+  publishWorkflowNodeProgress,
+  publishWorkflowStateChanged,
+} from '../events/domain-events';
 import type { WorkflowEventBus } from '../events/event-bus';
 import { WORKFLOW_EVENT_TYPES } from '../events/event-bus';
-import type { WorkflowStore } from '../persistence/workflow-store';
-import type { StageRunner } from '../runner/stage-runner';
+import type { NodeExecutionPort } from '../ports/node-execution-port';
+import type { WorkflowStatePort } from '../ports/workflow-state-port';
 
 export interface SchedulerInput {
   readonly workflowId: string;
@@ -23,6 +30,7 @@ export interface SchedulerOptions {
   readonly maxConcurrency?: number;
   readonly maxRetries?: number;
   readonly retryBaseDelayMs?: number;
+  readonly domainEventBus?: DomainEventBus;
 }
 
 interface NodeCompletion {
@@ -129,16 +137,18 @@ export class Scheduler {
   private readonly maxConcurrency: number;
   private readonly maxRetries: number;
   private readonly retryBaseDelayMs: number;
+  private readonly domainEventBus?: DomainEventBus;
   private readonly abortController = new AbortController();
 
   constructor(
     private readonly eventBus: WorkflowEventBus,
-    private readonly store: WorkflowStore,
+    private readonly statePort: WorkflowStatePort,
     options: SchedulerOptions = {},
   ) {
     this.maxConcurrency = options.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY;
     this.maxRetries = options.maxRetries ?? MAX_NODE_RETRIES;
     this.retryBaseDelayMs = options.retryBaseDelayMs ?? RETRY_BASE_DELAY_MS;
+    this.domainEventBus = options.domainEventBus;
   }
 
   cancel(): void {
@@ -147,7 +157,7 @@ export class Scheduler {
 
   async execute(
     initialState: WorkflowState,
-    runner: StageRunner,
+    executor: NodeExecutionPort,
     input: SchedulerInput,
   ): Promise<WorkflowState> {
     let state: WorkflowState = {
@@ -156,8 +166,9 @@ export class Scheduler {
       updatedAt: new Date().toISOString(),
     };
 
-    await this.store.save(state);
+    await this.persistState(state);
     this.publishWorkflowEvent(WORKFLOW_EVENT_TYPES.WORKFLOW_STARTED, state);
+    this.publishDomainWorkflowEvent(WORKFLOW_EVENTS.STARTED, state);
 
     const readyQueue: NodeId[] = getPendingReadyNodes(state).map((node) => node.id);
     const inFlight = new Map<NodeId, Promise<NodeCompletion>>();
@@ -183,10 +194,11 @@ export class Scheduler {
         }
 
         state = updateNodeState(state, nodeId, { status: NODE_STATUSES.QUEUED });
-        await this.store.save(state);
+        await this.persistState(state);
         this.publishNodeEvent(WORKFLOW_EVENT_TYPES.NODE_QUEUED, state, nodeId);
+        this.publishDomainNodeEvent(WORKFLOW_EVENTS.NODE_QUEUED, state, nodeId);
 
-        const completion = this.runNode(state, node, runner, input).then((nextState) => ({
+        const completion = this.runNode(state, node, executor, input).then((nextState) => ({
           nodeId,
           state: nextState,
         }));
@@ -211,17 +223,18 @@ export class Scheduler {
           status: WORKFLOW_STATUSES.CANCELLED,
           updatedAt: new Date().toISOString(),
         };
-        await this.store.save(state);
+        await this.persistState(state);
         this.publishWorkflowEvent(WORKFLOW_EVENT_TYPES.WORKFLOW_CANCELLED, state);
+        this.publishDomainWorkflowEvent(WORKFLOW_EVENTS.CANCELLED, state);
         return state;
       }
 
       const completedNodeState = state.nodeStates.get(completion.nodeId);
       if (completedNodeState?.status === NODE_STATUSES.COMPLETED) {
         const nextReady = getPendingReadyNodes(state).map((node) => node.id);
-        for (const nodeId of nextReady) {
-          if (!readyQueue.includes(nodeId) && !inFlight.has(nodeId)) {
-            readyQueue.push(nodeId);
+        for (const nextNodeId of nextReady) {
+          if (!readyQueue.includes(nextNodeId) && !inFlight.has(nextNodeId)) {
+            readyQueue.push(nextNodeId);
           }
         }
       } else if (completedNodeState?.status === NODE_STATUSES.FAILED) {
@@ -230,20 +243,27 @@ export class Scheduler {
           status: WORKFLOW_STATUSES.FAILED,
           updatedAt: new Date().toISOString(),
         };
-        await this.store.save(state);
+        await this.persistState(state);
         this.publishWorkflowEvent(WORKFLOW_EVENT_TYPES.WORKFLOW_FAILED, state);
+        this.publishDomainWorkflowEvent(WORKFLOW_EVENTS.FAILED, state);
         return state;
       }
     }
 
     if (state.status === WORKFLOW_STATUSES.RUNNING && isWorkflowFinished(state)) {
       state = finalizeWorkflowStatus(state);
-      await this.store.save(state);
+      await this.persistState(state);
       const eventType =
         state.status === WORKFLOW_STATUSES.COMPLETED
           ? WORKFLOW_EVENT_TYPES.WORKFLOW_COMPLETED
           : WORKFLOW_EVENT_TYPES.WORKFLOW_FAILED;
       this.publishWorkflowEvent(eventType, state);
+      this.publishDomainWorkflowEvent(
+        state.status === WORKFLOW_STATUSES.COMPLETED
+          ? WORKFLOW_EVENTS.COMPLETED
+          : WORKFLOW_EVENTS.FAILED,
+        state,
+      );
     }
 
     return state;
@@ -251,7 +271,7 @@ export class Scheduler {
 
   async resume(
     persistedState: WorkflowState,
-    runner: StageRunner,
+    executor: NodeExecutionPort,
     input: SchedulerInput,
   ): Promise<WorkflowState> {
     let state = persistedState;
@@ -270,13 +290,13 @@ export class Scheduler {
       state = { ...state, status: WORKFLOW_STATUSES.RUNNING };
     }
 
-    return this.execute(state, runner, input);
+    return this.execute(state, executor, input);
   }
 
   private async runNode(
     state: WorkflowState,
     node: DagNode,
-    runner: StageRunner,
+    executor: NodeExecutionPort,
     input: SchedulerInput,
   ): Promise<WorkflowState> {
     let currentState = state;
@@ -298,11 +318,13 @@ export class Scheduler {
         error: null,
         progress: 0,
       });
-      await this.store.save(currentState);
+      await this.persistState(currentState);
       this.publishNodeEvent(WORKFLOW_EVENT_TYPES.NODE_STARTED, currentState, node.id);
+      this.publishDomainNodeEvent(WORKFLOW_EVENTS.NODE_DISPATCHED, currentState, node.id);
+      this.publishDomainNodeEvent(WORKFLOW_EVENTS.NODE_STARTED, currentState, node.id);
 
       try {
-        const result = await runner.run(node, currentState, {
+        const result = await executor.execute({
           workflowId: input.workflowId,
           jobId: input.jobId,
           nodeId: node.id,
@@ -320,6 +342,9 @@ export class Scheduler {
           onProgress: (progress) => {
             currentState = updateNodeState(currentState, node.id, { progress });
             this.publishNodeProgress(currentState, node.id, progress);
+            if (this.domainEventBus !== undefined) {
+              publishWorkflowNodeProgress(this.domainEventBus, currentState, node.id, progress);
+            }
           },
         });
 
@@ -332,11 +357,12 @@ export class Scheduler {
           progress: 100,
           error: null,
         });
-        await this.store.save(currentState);
+        await this.persistState(currentState);
         this.publishNodeEvent(WORKFLOW_EVENT_TYPES.NODE_COMPLETED, currentState, node.id);
+        this.publishDomainNodeEvent(WORKFLOW_EVENTS.NODE_COMPLETED, currentState, node.id);
         return currentState;
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Stage execution failed.';
+        const message = error instanceof Error ? error.message : 'Node execution failed.';
 
         if (!node.retryable || attempt > this.maxRetries) {
           currentState = updateNodeState(currentState, node.id, {
@@ -344,8 +370,9 @@ export class Scheduler {
             completedAt: new Date().toISOString(),
             error: message,
           });
-          await this.store.save(currentState);
+          await this.persistState(currentState);
           this.publishNodeEvent(WORKFLOW_EVENT_TYPES.NODE_FAILED, currentState, node.id);
+          this.publishDomainNodeEvent(WORKFLOW_EVENTS.NODE_FAILED, currentState, node.id);
           return currentState;
         }
 
@@ -354,8 +381,9 @@ export class Scheduler {
           error: message,
           progress: 0,
         });
-        await this.store.save(currentState);
+        await this.persistState(currentState);
         this.publishNodeEvent(WORKFLOW_EVENT_TYPES.NODE_RETRYING, currentState, node.id);
+        this.publishDomainNodeEvent(WORKFLOW_EVENTS.NODE_RETRYING, currentState, node.id);
 
         const delayMs = this.retryBaseDelayMs * 2 ** (attempt - 1);
         await sleep(delayMs);
@@ -368,6 +396,42 @@ export class Scheduler {
       error: 'Maximum retry attempts exceeded.',
       completedAt: new Date().toISOString(),
     });
+  }
+
+  private async persistState(state: WorkflowState): Promise<void> {
+    await this.statePort.persist(state);
+    if (this.domainEventBus !== undefined) {
+      publishWorkflowStateChanged(this.domainEventBus, state);
+    }
+  }
+
+  private publishDomainWorkflowEvent(
+    type:
+      | typeof WORKFLOW_EVENTS.STARTED
+      | typeof WORKFLOW_EVENTS.COMPLETED
+      | typeof WORKFLOW_EVENTS.FAILED
+      | typeof WORKFLOW_EVENTS.CANCELLED,
+    state: WorkflowState,
+  ): void {
+    if (this.domainEventBus !== undefined) {
+      publishWorkflowLifecycleEvent(this.domainEventBus, type, state);
+    }
+  }
+
+  private publishDomainNodeEvent(
+    type:
+      | typeof WORKFLOW_EVENTS.NODE_QUEUED
+      | typeof WORKFLOW_EVENTS.NODE_DISPATCHED
+      | typeof WORKFLOW_EVENTS.NODE_STARTED
+      | typeof WORKFLOW_EVENTS.NODE_COMPLETED
+      | typeof WORKFLOW_EVENTS.NODE_FAILED
+      | typeof WORKFLOW_EVENTS.NODE_RETRYING,
+    state: WorkflowState,
+    nodeId: NodeId,
+  ): void {
+    if (this.domainEventBus !== undefined) {
+      publishWorkflowNodeEvent(this.domainEventBus, type, state, nodeId);
+    }
   }
 
   private publishWorkflowEvent(

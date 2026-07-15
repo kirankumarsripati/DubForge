@@ -53,9 +53,9 @@ importers:
       '@dubforge/pipeline':
         specifier: workspace:*
         version: link:../../packages/pipeline
-      '@dubforge/providers':
+      '@dubforge/platform-runtime':
         specifier: workspace:*
-        version: link:../../packages/providers
+        version: link:../../packages/platform-runtime
       '@dubforge/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -65,6 +65,9 @@ importers:
       '@dubforge/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      better-sqlite3:
+        specifier: ^11.10.0
+        version: 11.10.0
       framer-motion:
         specifier: ^12.16.0
         version: 12.42.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -84,6 +87,9 @@ importers:
         specifier: ^5.0.5
         version: 5.0.14(@types/react@19.2.17)(react@19.2.7)
     devDependencies:
+      '@electron/rebuild':
+        specifier: ^4.2.0
+        version: 4.2.0
       '@playwright/test':
         specifier: ^1.52.0
         version: 1.61.1
@@ -167,13 +173,152 @@ importers:
       '@dubforge/job-config':
         specifier: workspace:*
         version: link:../job-config
-      '@dubforge/providers':
+      '@dubforge/platform-events':
         specifier: workspace:*
-        version: link:../providers
+        version: link:../platform-events
+      '@dubforge/platform-execution':
+        specifier: workspace:*
+        version: link:../platform-execution
       '@dubforge/types':
         specifier: workspace:*
         version: link:../types
     devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@26.1.1)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(yaml@2.9.0)
+
+  packages/platform-artifact:
+    dependencies:
+      '@dubforge/platform-events':
+        specifier: workspace:*
+        version: link:../platform-events
+      '@dubforge/platform-execution-adapters':
+        specifier: workspace:*
+        version: link:../platform-execution-adapters
+      better-sqlite3:
+        specifier: ^11.10.0
+        version: 11.10.0
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@26.1.1)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(yaml@2.9.0)
+
+  packages/platform-events:
+    dependencies:
+      '@dubforge/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@26.1.1)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(yaml@2.9.0)
+
+  packages/platform-execution:
+    dependencies:
+      '@dubforge/job-config':
+        specifier: workspace:*
+        version: link:../job-config
+      '@dubforge/platform-events':
+        specifier: workspace:*
+        version: link:../platform-events
+      '@dubforge/platform-execution-adapters':
+        specifier: workspace:*
+        version: link:../platform-execution-adapters
+      '@dubforge/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@26.1.1)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(yaml@2.9.0)
+
+  packages/platform-execution-adapters:
+    dependencies:
+      '@dubforge/job-config':
+        specifier: workspace:*
+        version: link:../job-config
+      '@dubforge/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@26.1.1)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(yaml@2.9.0)
+
+  packages/platform-observability:
+    dependencies:
+      '@dubforge/platform-events':
+        specifier: workspace:*
+        version: link:../platform-events
+      '@dubforge/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@26.1.1)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(yaml@2.9.0)
+
+  packages/platform-resource:
+    dependencies:
+      '@dubforge/platform-events':
+        specifier: workspace:*
+        version: link:../platform-events
+    devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@26.1.1)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(yaml@2.9.0)
+
+  packages/platform-runtime:
+    dependencies:
+      '@dubforge/pipeline':
+        specifier: workspace:*
+        version: link:../pipeline
+      '@dubforge/platform-artifact':
+        specifier: workspace:*
+        version: link:../platform-artifact
+      '@dubforge/platform-events':
+        specifier: workspace:*
+        version: link:../platform-events
+      '@dubforge/platform-execution':
+        specifier: workspace:*
+        version: link:../platform-execution
+      '@dubforge/platform-execution-adapters':
+        specifier: workspace:*
+        version: link:../platform-execution-adapters
+      '@dubforge/platform-observability':
+        specifier: workspace:*
+        version: link:../platform-observability
+      '@dubforge/platform-resource':
+        specifier: workspace:*
+        version: link:../platform-resource
+    devDependencies:
+      '@dubforge/job-config':
+        specifier: workspace:*
+        version: link:../job-config
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
@@ -5978,11 +6123,11 @@ snapshots:
 
   node-abi@4.33.0:
     dependencies:
-      semver: 7.7.4
+      semver: 7.8.5
 
   node-api-version@0.2.1:
     dependencies:
-      semver: 7.7.4
+      semver: 7.8.5
 
   node-exports-info@1.6.2:
     dependencies:
@@ -5998,7 +6143,7 @@ snapshots:
       graceful-fs: 4.2.11
       nopt: 9.0.0
       proc-log: 6.1.0
-      semver: 7.7.4
+      semver: 7.8.5
       tar: 7.5.20
       tinyglobby: 0.2.17
       undici: 6.27.0

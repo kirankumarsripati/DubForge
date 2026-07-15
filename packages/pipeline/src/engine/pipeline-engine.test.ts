@@ -3,11 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { compileWorkflow } from '../compiler/workflow-compiler';
-import { PipelineEngine } from '../engine/pipeline-engine';
-import { FileWorkflowStore } from '../persistence/workflow-store';
+import { InMemoryWorkflowStatePort } from '../ports/in-memory-workflow-state-port';
 import { DEFAULT_OUTPUT_CONFIGURATION } from '@dubforge/job-config';
-import { createConfiguredExtensionRuntime } from '@dubforge/providers';
-import type { DagNode } from '../dag/types';
 import { createWorkflowEventBus } from '../events/event-bus';
 import { createWorkflowState } from '../runner/stage-runner';
 import { Scheduler } from '../scheduler/scheduler';
@@ -25,7 +22,7 @@ async function createArtifactRoot(): Promise<string> {
 }
 
 describe('PipelineEngine', () => {
-  it('executes a workflow with fake providers and persists state', async () => {
+  it('executes a workflow and persists state through ports', async () => {
     const artifactRoot = await createArtifactRoot();
 
     const graph = compileWorkflow({
@@ -45,21 +42,21 @@ describe('PipelineEngine', () => {
     });
 
     const state = createWorkflowState(graph, artifactRoot);
-    const store = new FileWorkflowStore();
-    const scheduler = new Scheduler(createWorkflowEventBus(), store, {
+    const statePort = new InMemoryWorkflowStatePort();
+    const scheduler = new Scheduler(createWorkflowEventBus(), statePort, {
       maxConcurrency: 4,
       retryBaseDelayMs: 10,
     });
 
-    const runner = {
-      run: (node: DagNode) =>
+    const executor = {
+      execute: (request: { nodeId: string }) =>
         Promise.resolve({
-          artifacts: { [node.id]: join(artifactRoot, `${node.id}.json`) },
+          artifacts: { [request.nodeId]: join(artifactRoot, `${request.nodeId}.json`) },
           durationMs: 5,
         }),
     };
 
-    const finalState = await scheduler.execute(state, runner, {
+    const finalState = await scheduler.execute(state, executor, {
       workflowId: graph.workflowId,
       jobId: graph.jobId,
       videoPath: '/tmp/video.mp4',
@@ -75,17 +72,23 @@ describe('PipelineEngine', () => {
 
     expect(finalState.status).toBe('completed');
 
-    const persisted = await store.load('wf-engine', artifactRoot);
+    const persisted = await statePort.restore('wf-engine', artifactRoot);
     expect(persisted?.status).toBe('completed');
   });
 
-  it('starts workflows through the engine facade using extension capabilities', async () => {
+  it('starts workflows through the engine facade', async () => {
     const artifactRoot = await createArtifactRoot();
-    const runtime = await createConfiguredExtensionRuntime();
+    const statePort = new InMemoryWorkflowStatePort();
 
-    const engine = new PipelineEngine({
-      runtime,
-      store: new FileWorkflowStore(),
+    const engine = new (await import('../engine/pipeline-engine.js')).PipelineEngine({
+      executor: {
+        execute: (request) =>
+          Promise.resolve({
+            artifacts: { [request.nodeKind]: join(artifactRoot, `${request.nodeId}.json`) },
+            durationMs: 5,
+          }),
+      },
+      statePort,
       maxConcurrency: 2,
     });
 
@@ -108,5 +111,5 @@ describe('PipelineEngine', () => {
     });
 
     expect(finalState.status).toBe('completed');
-  }, 120_000);
+  });
 });
