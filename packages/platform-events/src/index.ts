@@ -2,6 +2,7 @@ export {
   ARTIFACT_EVENTS,
   EXECUTION_EVENTS,
   MEDIA_EVENTS,
+  TRANSCRIPTION_EVENTS,
   OBSERVABILITY_EVENTS,
   RESOURCE_EVENTS,
   WORKFLOW_EVENTS,
@@ -29,6 +30,10 @@ export type {
   MediaOperationEvent,
   MediaArtifactProducedEvent,
   MediaDiagnosticEvent,
+  TranscriptionRecognizedEvent,
+  TranscriptionOperationEvent,
+  TranscriptionArtifactProducedEvent,
+  TranscriptionQualityEvent,
 } from './events.js';
 
 export { createDomainEventBus, createDomainEventId, type DomainEventBus } from './event-bus.js';

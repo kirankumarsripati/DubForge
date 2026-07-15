@@ -1,0 +1,19 @@
+{
+  "segments": [
+    {
+      "start": 0,
+      "end": 2.5,
+      "text": "Hello world.",
+      "avg_logprob": -0.08,
+      "speaker": null
+    },
+    {
+      "start": 2.5,
+      "end": 5.0,
+      "text": "This is a golden transcript.",
+      "avg_logprob": -0.12,
+      "speaker": null
+    }
+  ],
+  "durationSeconds": 5
+}

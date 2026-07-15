@@ -170,6 +170,7 @@ export function createPipelineJobService(
     ffprobePath: 'ffprobe',
     ffmpegPath: 'ffmpeg',
     useFixtureMediaAdapters: true,
+    useFixtureTranscriptionAdapters: true,
   });
 
   return new PipelineJobService(cacheService, jobsRoot, platformStack);

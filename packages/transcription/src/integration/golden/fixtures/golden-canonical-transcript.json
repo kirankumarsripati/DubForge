@@ -1,0 +1,25 @@
+{
+  "version": "1.0.0",
+  "languageCode": "en",
+  "durationMs": 5000,
+  "segmentCount": 2,
+  "segments": [
+    {
+      "startMs": 0,
+      "endMs": 2500,
+      "text": "Hello world.",
+      "languageCode": "en",
+      "confidence": 0.92,
+      "speakerId": null
+    },
+    {
+      "startMs": 2500,
+      "endMs": 5000,
+      "text": "This is a golden transcript.",
+      "languageCode": "en",
+      "confidence": 0.88,
+      "speakerId": null
+    }
+  ],
+  "qualityScore": 85
+}

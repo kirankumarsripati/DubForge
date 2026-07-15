@@ -15,11 +15,7 @@ export class PythonExecutionAdapter implements ExecutionAdapter {
   constructor(private readonly options: PythonExecutionAdapterOptions = {}) {}
 
   canHandle(request: ExecutionAdapterRequest): boolean {
-    return (
-      request.nodeKind === 'speech-recognition' ||
-      request.nodeKind === 'translate' ||
-      request.nodeKind === 'speech'
-    );
+    return request.nodeKind === 'speech';
   }
 
   execute(request: ExecutionAdapterRequest): Promise<ExecutionAdapterResult> {

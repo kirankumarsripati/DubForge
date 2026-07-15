@@ -54,6 +54,15 @@ export const MEDIA_EVENTS = {
   DIAGNOSTIC_RECORDED: 'media.diagnostic-recorded',
 } as const;
 
+export const TRANSCRIPTION_EVENTS = {
+  RECOGNIZED: 'transcription.recognized',
+  OPERATION_STARTED: 'transcription.operation-started',
+  OPERATION_COMPLETED: 'transcription.operation-completed',
+  OPERATION_FAILED: 'transcription.operation-failed',
+  ARTIFACT_PRODUCED: 'transcription.artifact-produced',
+  QUALITY_ANALYZED: 'transcription.quality-analyzed',
+} as const;
+
 export interface DomainEventBase {
   readonly id: string;
   readonly timestamp: string;
@@ -205,6 +214,44 @@ export interface MediaDiagnosticEvent extends DomainEventBase {
   readonly message: string;
 }
 
+export interface TranscriptionRecognizedEvent extends DomainEventBase {
+  readonly type: typeof TRANSCRIPTION_EVENTS.RECOGNIZED;
+  readonly nodeId: string;
+  readonly transcriptId: string;
+  readonly languageCode: string;
+  readonly artifactPath: string;
+  readonly segmentCount: number;
+}
+
+export interface TranscriptionOperationEvent extends DomainEventBase {
+  readonly type:
+    | typeof TRANSCRIPTION_EVENTS.OPERATION_STARTED
+    | typeof TRANSCRIPTION_EVENTS.OPERATION_COMPLETED
+    | typeof TRANSCRIPTION_EVENTS.OPERATION_FAILED;
+  readonly nodeId: string;
+  readonly operationId: string;
+  readonly operationKind: string;
+  readonly artifactPath?: string;
+  readonly durationMs?: number;
+  readonly message?: string;
+  readonly languageCode: string | null;
+}
+
+export interface TranscriptionArtifactProducedEvent extends DomainEventBase {
+  readonly type: typeof TRANSCRIPTION_EVENTS.ARTIFACT_PRODUCED;
+  readonly nodeId: string;
+  readonly artifactPath: string;
+  readonly operationKind: string;
+  readonly languageCode: string | null;
+}
+
+export interface TranscriptionQualityEvent extends DomainEventBase {
+  readonly type: typeof TRANSCRIPTION_EVENTS.QUALITY_ANALYZED;
+  readonly nodeId: string;
+  readonly score: number;
+  readonly languageCode: string;
+}
+
 export type DomainEvent =
   | WorkflowLifecycleEvent
   | WorkflowStateChangedEvent
@@ -222,7 +269,11 @@ export type DomainEvent =
   | MediaFileProbedEvent
   | MediaOperationEvent
   | MediaArtifactProducedEvent
-  | MediaDiagnosticEvent;
+  | MediaDiagnosticEvent
+  | TranscriptionRecognizedEvent
+  | TranscriptionOperationEvent
+  | TranscriptionArtifactProducedEvent
+  | TranscriptionQualityEvent;
 
 export type DomainEventType = DomainEvent['type'];
 
