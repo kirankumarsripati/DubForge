@@ -1,0 +1,74 @@
+---
+description: AI pipeline architecture
+alwaysApply: true
+---
+
+# AI Pipeline Rules
+
+The pipeline is deterministic.
+
+Every stage
+
+has one responsibility.
+
+Every stage
+
+produces artifacts.
+
+Every stage
+
+can resume.
+
+Every stage
+
+can retry.
+
+Stages
+
+Validate
+
+↓
+
+Fingerprint
+
+↓
+
+Extract Audio
+
+↓
+
+Speech Recognition
+
+↓
+
+Transcript
+
+↓
+
+Translation
+
+↓
+
+Speech
+
+↓
+
+Mux
+
+↓
+
+Verification
+
+Never skip validation.
+
+Never modify previous artifacts.
+
+Never delete artifacts.
+
+Use cache whenever possible.
+
+Translation and speech generation
+
+may execute in parallel.
+
+Muxing never runs in parallel.

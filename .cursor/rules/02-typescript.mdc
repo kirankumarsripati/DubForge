@@ -1,0 +1,50 @@
+---
+description: TypeScript coding standards
+alwaysApply: true
+---
+
+# TypeScript Rules
+
+Always use
+
+Strict TypeScript.
+
+## Forbidden
+
+any
+
+enum
+
+magic strings
+
+magic numbers
+
+non-null assertions unless justified
+
+implicit any
+
+console.log
+
+## Required
+
+readonly where appropriate
+
+discriminated unions
+
+explicit return types for public APIs
+
+small interfaces
+
+typed IPC
+
+Use Zod for runtime validation.
+
+Never duplicate interfaces.
+
+Extract reusable types.
+
+No business logic in components.
+
+Avoid classes unless necessary.
+
+Prefer functions.

@@ -1,0 +1,60 @@
+---
+description: UI and UX guidelines
+alwaysApply: true
+---
+
+# UI Rules
+
+Design Philosophy
+
+Apple
+
+Raycast
+
+Linear
+
+Cursor
+
+Minimal
+
+Professional
+
+Use whitespace generously.
+
+Avoid visual noise.
+
+One primary action per screen.
+
+Progressive disclosure.
+
+Large click targets.
+
+Dark mode first.
+
+Animations
+
+Subtle
+
+Fast
+
+Under 250ms
+
+Use Framer Motion.
+
+Never animate for decoration.
+
+Always animate to communicate.
+
+Loading
+
+Skeletons
+
+Progress
+
+Never spinner-only screens.
+
+Errors
+
+Human-readable.
+
+Recovery action required.

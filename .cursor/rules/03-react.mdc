@@ -1,0 +1,60 @@
+---
+description: React architecture
+alwaysApply: true
+---
+
+# React Rules
+
+Use
+
+React
+
+TypeScript
+
+Functional Components
+
+Hooks
+
+Never use class components.
+
+Business logic belongs outside React.
+
+Components should
+
+Render UI
+
+Handle user interaction
+
+Call services
+
+Nothing more.
+
+Prefer
+
+Composition
+
+Small components
+
+Reusable components
+
+Avoid prop drilling.
+
+Use Zustand.
+
+Accessibility is required.
+
+Every interactive element
+
+must have
+
+keyboard support
+
+focus styles
+
+ARIA labels
+
+Prefer optimistic UI.
+
+Loading states should use skeletons.
+
+Avoid spinner-only interfaces.

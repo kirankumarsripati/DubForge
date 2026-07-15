@@ -1,0 +1,36 @@
+---
+description: Git workflow
+alwaysApply: true
+---
+
+# Git Rules
+
+One task
+
+One branch
+
+One pull request
+
+One merge
+
+Use Conventional Commits.
+
+Examples
+
+feat:
+
+fix:
+
+refactor:
+
+docs:
+
+test:
+
+chore:
+
+Never mix unrelated changes.
+
+Never refactor unrelated code.
+
+Generate commit message after implementation.

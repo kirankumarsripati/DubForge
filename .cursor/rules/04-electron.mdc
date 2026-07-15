@@ -1,0 +1,44 @@
+---
+description: Electron architecture
+alwaysApply: true
+---
+
+# Electron Rules
+
+Renderer
+
+Never
+
+spawn processes
+
+read files
+
+write files
+
+call ffmpeg
+
+call python
+
+Everything goes through typed IPC.
+
+Main Process
+
+Owns
+
+Filesystem
+
+Pipeline
+
+Worker lifecycle
+
+Settings
+
+Logging
+
+Use async IPC only.
+
+No synchronous IPC.
+
+Validate every IPC payload with Zod.
+
+Never trust renderer input.

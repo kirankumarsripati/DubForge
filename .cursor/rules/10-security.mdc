@@ -1,0 +1,28 @@
+---
+description: Security and privacy
+alwaysApply: true
+---
+
+# Security Rules
+
+DubForge is offline first.
+
+Never introduce telemetry.
+
+Never upload files.
+
+Never collect analytics.
+
+Escape filesystem paths.
+
+Validate all user input.
+
+Never execute shell commands with unsanitized values.
+
+Use parameterized process execution.
+
+Protect against path traversal.
+
+Never expose stack traces in UI.
+
+Show friendly errors.

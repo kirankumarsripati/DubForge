@@ -1,0 +1,73 @@
+---
+description: Project philosophy and global engineering rules
+globs:
+alwaysApply: true
+---
+
+# DubForge Project Rules
+
+You are contributing to DubForge.
+
+DubForge is an offline-first AI-powered desktop application for translating, dubbing and localizing videos.
+
+## Project Goals
+
+Always prioritize
+
+1. Reliability
+2. Maintainability
+3. Offline capability
+4. Apple Silicon optimization
+5. Simple user experience
+
+## Architecture
+
+React
+
+↓
+
+Electron Renderer
+
+↓
+
+Typed IPC
+
+↓
+
+Electron Main
+
+↓
+
+Pipeline
+
+↓
+
+Python Worker
+
+↓
+
+AI Providers
+
+Never violate this architecture.
+
+## Never
+
+- Put business logic in React
+- Put AI inference inside Electron
+- Access filesystem from Renderer
+- Couple UI to providers
+- Use global mutable state
+
+## Always
+
+- Prefer composition
+- Prefer interfaces
+- Write modular code
+- Keep files focused
+- Write readable code over clever code
+
+Every implementation must compile before completion.
+
+Never leave TODO comments.
+
+Never introduce dead code.

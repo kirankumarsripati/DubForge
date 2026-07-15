@@ -1,0 +1,54 @@
+---
+description: Python worker rules
+alwaysApply: true
+---
+
+# Python Rules
+
+Python is a worker only.
+
+Never know about Electron.
+
+Never know about React.
+
+Never know about UI.
+
+Responsibilities
+
+Speech Recognition
+
+Translation
+
+Speech
+
+Only.
+
+Use
+
+Python 3.12
+
+ruff
+
+black
+
+mypy
+
+Type hints required.
+
+No global state.
+
+Every provider implements
+
+initialize()
+
+execute()
+
+validate()
+
+cleanup()
+
+Raise structured exceptions.
+
+Never print debugging output.
+
+Return JSON only.
