@@ -1,7 +1,7 @@
 import type { AsyncState, Model } from '@dubforge/types';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { modelService, setMockModelsSimulateError } from '../services';
+import { modelService } from '../services';
 
 interface ModelsStoreState {
   readonly models: AsyncState<readonly Model[]>;
@@ -9,7 +9,9 @@ interface ModelsStoreState {
   downloadModel: (id: string) => Promise<void>;
   deleteModel: (id: string) => Promise<void>;
   updateModel: (id: string) => Promise<void>;
-  setSimulateError: (value: boolean) => void;
+  verifyModel: (id: string) => Promise<void>;
+  repairModel: (id: string) => Promise<void>;
+  subscribeToChanges: () => () => void;
 }
 
 const initialState: AsyncState<readonly Model[]> = {
@@ -44,8 +46,18 @@ export const useModelsStore = create<ModelsStoreState>()(
         await modelService.updateModel(id);
         await get().fetchModels();
       },
-      setSimulateError: (value) => {
-        setMockModelsSimulateError(value);
+      verifyModel: async (id) => {
+        await modelService.verifyModel(id);
+        await get().fetchModels();
+      },
+      repairModel: async (id) => {
+        await modelService.repairModel(id);
+        await get().fetchModels();
+      },
+      subscribeToChanges: () => {
+        return modelService.subscribe(() => {
+          void get().fetchModels();
+        });
       },
     }),
     { name: 'models-store' },

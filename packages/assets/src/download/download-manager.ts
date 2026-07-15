@@ -4,7 +4,6 @@ import { dirname, join } from 'node:path';
 
 import type Database from 'better-sqlite3';
 
-import { BINARIES_DIRECTORY } from '../constants.js';
 import type { AssetRepository } from '../repository/asset-repository.js';
 import { ASSET_STATUSES, DOWNLOAD_STATUSES } from '../types.js';
 import type { DownloadRecord } from '../types.js';
@@ -135,7 +134,7 @@ export class DownloadManager {
   }
 
   getBinaryPath(assetId: string, version: string): string {
-    return join(this.options.binariesRoot, BINARIES_DIRECTORY, assetId, version, 'asset.bin');
+    return join(this.options.binariesRoot, assetId, version, 'asset.bin');
   }
 
   enqueueDownload(assetId: string, targetVersion: string): Promise<DownloadRecord> {

@@ -3,7 +3,6 @@ import { useEffect } from 'react';
 import { SettingsForm } from '../components/settings/SettingsForm';
 import { PageHeader } from '../components/layout/PageHeader';
 import { useJobsStore } from '../stores/jobs-store';
-import { useModelsStore } from '../stores/models-store';
 import { useSettingsStore } from '../stores/settings-store';
 
 export function SettingsPage(): React.JSX.Element {
@@ -12,7 +11,6 @@ export function SettingsPage(): React.JSX.Element {
   const updateSettings = useSettingsStore((state) => state.updateSettings);
   const setSimulateError = useSettingsStore((state) => state.setSimulateError);
   const setJobsSimulateError = useJobsStore((state) => state.setSimulateError);
-  const setModelsSimulateError = useModelsStore((state) => state.setSimulateError);
 
   useEffect(() => {
     void fetchSettings();
@@ -23,7 +21,6 @@ export function SettingsPage(): React.JSX.Element {
       if (partial.developerMode !== undefined) {
         setSimulateError(partial.developerMode);
         setJobsSimulateError(partial.developerMode);
-        setModelsSimulateError(partial.developerMode);
       }
     });
   };

@@ -1,0 +1,71 @@
+{
+  "assets": [
+    {
+      "id": "whisper-medium",
+      "name": "Whisper Medium",
+      "kind": "model",
+      "category": "speech-to-text",
+      "version": "1.0.0",
+      "latestVersion": "1.0.0",
+      "estimatedSizeBytes": 1530000000,
+      "requiredBy": ["Speech Recognition", "Fast Profile"]
+    },
+    {
+      "id": "whisper-large-v3",
+      "name": "Whisper Large v3",
+      "kind": "model",
+      "category": "speech-to-text",
+      "version": "3.0.0",
+      "latestVersion": "3.0.0",
+      "estimatedSizeBytes": 3090000000,
+      "requiredBy": ["Speech Recognition", "Balanced Profile", "Studio Profile"]
+    },
+    {
+      "id": "seamless-m4t",
+      "name": "SeamlessM4T",
+      "kind": "model",
+      "category": "translation",
+      "version": "1.0.0",
+      "latestVersion": "1.0.0",
+      "estimatedSizeBytes": 4200000000,
+      "requiredBy": ["Translation", "Fast Profile", "Balanced Profile", "Studio Profile"]
+    },
+    {
+      "id": "kokoro-v1",
+      "name": "Kokoro",
+      "kind": "model",
+      "category": "speech",
+      "version": "1.0.0",
+      "latestVersion": "1.0.0",
+      "estimatedSizeBytes": 520000000,
+      "requiredBy": ["Speech Generation", "Balanced Profile", "Studio Profile"]
+    },
+    {
+      "id": "kokoro-standard",
+      "name": "Kokoro Standard",
+      "kind": "model",
+      "category": "speech",
+      "version": "1.0.0",
+      "latestVersion": "1.0.0",
+      "estimatedSizeBytes": 420000000,
+      "requiredBy": ["Speech Generation", "Fast Profile"]
+    },
+    {
+      "id": "kokoro-premium",
+      "name": "Kokoro Premium",
+      "kind": "model",
+      "category": "speech",
+      "version": "1.0.0",
+      "latestVersion": "1.0.0",
+      "estimatedSizeBytes": 780000000,
+      "requiredBy": ["Speech Generation", "Studio Profile"]
+    }
+  ],
+  "dependencies": [
+    {
+      "assetId": "whisper-large-v3",
+      "dependsOnAssetId": "whisper-medium",
+      "optional": true
+    }
+  ]
+}

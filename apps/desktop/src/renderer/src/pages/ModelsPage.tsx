@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import { ModelsList } from '../components/models/ModelsList';
 import { PageHeader } from '../components/layout/PageHeader';
 import { useModelsStore } from '../stores/models-store';
-import { useSettingsStore } from '../stores/settings-store';
 
 export function ModelsPage(): React.JSX.Element {
   const models = useModelsStore((state) => state.models);
@@ -12,16 +11,17 @@ export function ModelsPage(): React.JSX.Element {
   const downloadModel = useModelsStore((state) => state.downloadModel);
   const deleteModel = useModelsStore((state) => state.deleteModel);
   const updateModel = useModelsStore((state) => state.updateModel);
-  const setSimulateError = useModelsStore((state) => state.setSimulateError);
-  const developerMode = useSettingsStore((state) => state.settings.data?.developerMode ?? false);
+  const verifyModel = useModelsStore((state) => state.verifyModel);
+  const repairModel = useModelsStore((state) => state.repairModel);
+  const subscribeToChanges = useModelsStore((state) => state.subscribeToChanges);
 
   useEffect(() => {
-    setSimulateError(developerMode);
     void fetchModels();
-  }, [fetchModels, setSimulateError, developerMode]);
+    const unsubscribe = subscribeToChanges();
+    return unsubscribe;
+  }, [fetchModels, subscribeToChanges]);
 
-  const installedCount =
-    models.data?.filter((m) => m.status === 'installed' || m.status === 'ready').length ?? 0;
+  const installedCount = models.data?.filter((model) => model.status === 'installed').length ?? 0;
 
   return (
     <div className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8">
@@ -54,7 +54,7 @@ export function ModelsPage(): React.JSX.Element {
                   description="Download the required models to enable offline video localization."
                   actionLabel="Download Missing Models"
                   onAction={() => {
-                    const missing = models.data?.find((m) => m.status === 'missing');
+                    const missing = models.data?.find((model) => model.status === 'missing');
                     if (missing) {
                       void downloadModel(missing.id);
                     }
@@ -72,6 +72,12 @@ export function ModelsPage(): React.JSX.Element {
               }}
               onUpdate={(id) => {
                 void updateModel(id);
+              }}
+              onVerify={(id) => {
+                void verifyModel(id);
+              }}
+              onRepair={(id) => {
+                void repairModel(id);
               }}
             />
           </>

@@ -6,11 +6,11 @@ import type {
   SettingsService,
   VideoService,
 } from '@dubforge/types';
+import { ipcModelService } from './ipc/ipc-model-service';
 import { ipcPipelineService } from './ipc/ipc-pipeline-service';
 import { ipcVideoService } from './ipc/ipc-video-service';
 import { mockAppService } from './mock/mock-app-service';
 import { mockJobService } from './mock/mock-job-service';
-import { mockModelService } from './mock/mock-model-service';
 import { mockPipelineService } from './mock/mock-pipeline-service';
 import { mockSettingsService } from './mock/mock-settings-service';
 import { mockVideoService } from './mock/mock-video-service';
@@ -27,7 +27,7 @@ function hasPipelineBridge(): boolean {
 
 export const appService: AppService = mockAppService;
 export const jobService: JobService = mockJobService;
-export const modelService: ModelService = mockModelService;
+export const modelService: ModelService = ipcModelService;
 export const pipelineService: PipelineService = hasPipelineBridge()
   ? ipcPipelineService
   : mockPipelineService;
@@ -39,10 +39,8 @@ export {
   MOCK_DEFAULT_SETTINGS,
   MOCK_JOBS,
   MOCK_LANGUAGES,
-  MOCK_MODELS,
   MOCK_SAMPLE_VIDEO,
 } from './mock/mock-data';
 
 export { setMockJobsSimulateError } from './mock/mock-job-service';
-export { setMockModelsSimulateError } from './mock/mock-model-service';
 export { setMockSettingsSimulateError } from './mock/mock-settings-service';

@@ -1,6 +1,7 @@
 import { app, BrowserWindow, shell } from 'electron';
 import { join } from 'node:path';
-import { initializeApplicationContainer } from './container';
+import { disposeApplicationContainer, initializeApplicationContainer } from './container';
+import { registerModelIpcHandlers } from './ipc/model-handlers';
 import { registerPipelineIpcHandlers } from './ipc/pipeline-handlers';
 import {
   registerPrivilegedSchemes,
@@ -46,13 +47,14 @@ function createWindow(): void {
   }
 }
 
-void app.whenReady().then(() => {
+void app.whenReady().then(async () => {
   app.setName('DubForge');
 
-  const container = initializeApplicationContainer();
+  const container = await initializeApplicationContainer();
   registerThumbnailProtocol(container);
   registerVideoIpcHandlers(container);
   registerPipelineIpcHandlers(container);
+  registerModelIpcHandlers(container);
 
   createWindow();
 
@@ -60,6 +62,10 @@ void app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
+  });
+
+  app.on('before-quit', () => {
+    disposeApplicationContainer(container);
   });
 });
 

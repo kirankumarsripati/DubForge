@@ -10,9 +10,21 @@ export {
   type PipelineJobResponse,
   type StartPipelineJobRequest,
 } from './pipeline-schemas';
+export { MODEL_IPC_CHANNELS, type ModelIpcChannel } from './model-channels';
+export {
+  modelCategorySchema,
+  modelIdRequestSchema,
+  modelResponseSchema,
+  modelStatusSchema,
+  modelsChangedEventSchema,
+  type ModelIdRequest,
+  type ModelResponse,
+  type ModelsChangedEvent,
+} from './model-schemas';
 export type {
   DubForgeApi,
   DubForgeFilesApi,
+  DubForgeModelsApi,
   DubForgePipelineApi,
   DubForgeVideoApi,
 } from './dubforge-api';

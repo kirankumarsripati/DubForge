@@ -130,6 +130,39 @@ export class AssetService {
     return this.downloadManager.startDownload(download.id);
   }
 
+  async downloadAssetInBackground(
+    assetId: string,
+    targetVersion?: string,
+  ): Promise<DownloadRecord> {
+    this.ensureInitialized();
+
+    const asset = this.repository.getAssetById(assetId);
+    if (asset === null) {
+      throw new Error(`Asset not found: ${assetId}`);
+    }
+
+    const version = targetVersion ?? asset.version;
+    const download = await this.downloadManager.enqueueDownload(assetId, version);
+    void this.downloadManager.startDownload(download.id).catch(() => undefined);
+    return download;
+  }
+
+  async repairAsset(assetId: string): Promise<DownloadRecord> {
+    this.ensureInitialized();
+
+    const asset = this.repository.getAssetById(assetId);
+    if (asset === null) {
+      throw new Error(`Asset not found: ${assetId}`);
+    }
+
+    if (asset.filePath !== null) {
+      await rm(dirname(asset.filePath), { recursive: true, force: true });
+      this.repository.clearAssetBinary(assetId, ASSET_STATUSES.CORRUPTED);
+    }
+
+    return this.downloadAssetInBackground(assetId, asset.version);
+  }
+
   async deleteAsset(assetId: string): Promise<AssetRecord> {
     this.ensureInitialized();
 
@@ -154,7 +187,7 @@ export class AssetService {
     }
 
     this.repository.updateAssetMetadata(assetId, { status: ASSET_STATUSES.OUTDATED });
-    return this.downloadAsset(assetId, targetVersion);
+    return this.downloadAssetInBackground(assetId, targetVersion);
   }
 
   resolveAsset(assetId: string, requireReady = true): ResolvedAsset | null {

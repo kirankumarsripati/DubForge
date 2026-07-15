@@ -18,7 +18,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "better-sqlite3": "^11.10.0"
+    "@dubforge/providers": "workspace:*",
+    "better-sqlite3": "^11.10.0",
+    "zod": "^3.25.67"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",

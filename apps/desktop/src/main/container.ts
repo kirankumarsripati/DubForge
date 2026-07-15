@@ -3,11 +3,13 @@ import type { ServiceContainer } from '@dubforge/shared';
 import { app } from 'electron';
 import { join } from 'node:path';
 
+import { createDesktopAssetStack, type DesktopAssetStack } from './services/desktop-asset-stack';
 import {
   createDesktopMediaStack,
   resolveFfprobePath,
   type DesktopMediaStack,
 } from './services/desktop-media-stack';
+import { DesktopModelService } from './services/desktop-model-service';
 import { createPipelineJobService, type PipelineJobService } from './services/pipeline-job-service';
 import { getRecentFilesStorePath, RecentFilesService } from './services/recent-files-service';
 import { ThumbnailService } from './services/thumbnail-service';
@@ -15,6 +17,8 @@ import { VideoCacheService } from './services/video-cache-service';
 import { VideoImportService } from './services/video-import-service';
 
 export const DESKTOP_MEDIA_STACK_TOKEN = createToken<DesktopMediaStack>('DesktopMediaStack');
+export const DESKTOP_ASSET_STACK_TOKEN = createToken<DesktopAssetStack>('DesktopAssetStack');
+export const DESKTOP_MODEL_SERVICE_TOKEN = createToken<DesktopModelService>('DesktopModelService');
 export const VIDEO_CACHE_SERVICE_TOKEN = createToken<VideoCacheService>('VideoCacheService');
 export const THUMBNAIL_SERVICE_TOKEN = createToken<ThumbnailService>('ThumbnailService');
 export const RECENT_FILES_SERVICE_TOKEN = createToken<RecentFilesService>('RecentFilesService');
@@ -58,16 +62,28 @@ export function createApplicationContainer(): ServiceContainer {
   return container;
 }
 
-export function initializeApplicationContainer(): ServiceContainer {
+export async function initializeApplicationContainer(): Promise<ServiceContainer> {
   const container = createApplicationContainer();
+  const userDataPath = app.getPath('userData');
+
+  const assetStack = await createDesktopAssetStack({ userDataPath });
+  container.registerSingleton(DESKTOP_ASSET_STACK_TOKEN, () => assetStack);
+  container.registerSingleton(
+    DESKTOP_MODEL_SERVICE_TOKEN,
+    () => new DesktopModelService(assetStack.assetPlatform),
+  );
+
   const pipelineService = createPipelineJobService(
     container.resolve(VIDEO_CACHE_SERVICE_TOKEN),
-    join(app.getPath('userData'), 'jobs'),
+    join(userDataPath, 'jobs'),
   );
   container.registerSingleton(PIPELINE_JOB_SERVICE_TOKEN, () => pipelineService);
+
   return container;
 }
 
 export function disposeApplicationContainer(container: ServiceContainer): void {
+  container.resolve(DESKTOP_MODEL_SERVICE_TOKEN).dispose();
+  container.resolve(DESKTOP_ASSET_STACK_TOKEN).close();
   container.resolve(DESKTOP_MEDIA_STACK_TOKEN).close();
 }

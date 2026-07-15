@@ -41,6 +41,17 @@ export {
   type PipelineIpcChannel,
   type PipelineJobResponse,
   type StartPipelineJobRequest,
+  MODEL_IPC_CHANNELS,
+  modelCategorySchema,
+  modelIdRequestSchema,
+  modelResponseSchema,
+  modelStatusSchema,
+  modelsChangedEventSchema,
+  type ModelIdRequest,
+  type ModelIpcChannel,
+  type ModelResponse,
+  type ModelsChangedEvent,
+  type DubForgeModelsApi,
 } from './ipc';
 export {
   calculateThumbnailTimestampSeconds,

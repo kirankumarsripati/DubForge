@@ -60,3 +60,25 @@ export { DEFAULT_ASSET_CATALOG, DEFAULT_ASSET_DEPENDENCIES } from './catalog/def
 
 export { AssetService, createAssetService } from './service/asset-service.js';
 export type { AssetServiceOptions } from './service/asset-service.js';
+
+export {
+  createAssetPlatform,
+  enqueueBackgroundDownload,
+  type AssetPlatform,
+  type AssetPlatformOptions,
+} from './asset-platform.js';
+
+export {
+  discoverAssetCatalogs,
+  buildCatalogMetadataMap,
+  toCreateAssetInput,
+  type DiscoveredCatalog,
+  type CatalogMetadata,
+} from './discovery/catalog-discovery.js';
+
+export {
+  toModelView,
+  type ModelView,
+  type ModelStatus,
+  type ModelCategory,
+} from './presentation/model-view.js';

@@ -47,6 +47,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@dubforge/assets':
+        specifier: workspace:*
+        version: link:../../packages/assets
       '@dubforge/job-config':
         specifier: workspace:*
         version: link:../../packages/job-config
@@ -150,9 +153,15 @@ importers:
 
   packages/assets:
     dependencies:
+      '@dubforge/providers':
+        specifier: workspace:*
+        version: link:../providers
       better-sqlite3:
         specifier: ^11.10.0
         version: 11.10.0
+      zod:
+        specifier: ^3.25.67
+        version: 3.25.76
     devDependencies:
       '@types/better-sqlite3':
         specifier: ^7.6.13

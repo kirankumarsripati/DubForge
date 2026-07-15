@@ -17,6 +17,7 @@
     "package": "pnpm rebuild:electron && electron-vite build && electron-builder --mac"
   },
   "dependencies": {
+    "@dubforge/assets": "workspace:*",
     "@dubforge/job-config": "workspace:*",
     "@dubforge/media": "workspace:*",
     "@dubforge/pipeline": "workspace:*",

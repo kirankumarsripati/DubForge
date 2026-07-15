@@ -9,9 +9,7 @@ export {
   MOCK_DEFAULT_SETTINGS,
   MOCK_JOBS,
   MOCK_LANGUAGES,
-  MOCK_MODELS,
   MOCK_SAMPLE_VIDEO,
   setMockJobsSimulateError,
-  setMockModelsSimulateError,
   setMockSettingsSimulateError,
 } from './registry';

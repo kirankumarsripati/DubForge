@@ -3,7 +3,6 @@ import type {
   AppSettings,
   Job,
   LocalizationLanguage,
-  Model,
   PipelineStage,
   VideoMetadata,
 } from '@dubforge/types';
@@ -129,44 +128,5 @@ export const MOCK_JOBS: Job[] = [
       description: 'FFmpeg could not read the audio stream from this file.',
       recoveryAction: 'Verify the file plays correctly in another app, then retry.',
     },
-  },
-];
-
-export const MOCK_MODELS: Model[] = [
-  {
-    id: 'whisper-large-v3',
-    name: 'Whisper Large v3',
-    category: 'speech-to-text',
-    status: 'ready',
-    version: '3.0.0',
-    sizeBytes: 3_090_000_000,
-    downloadProgress: null,
-  },
-  {
-    id: 'seamless-m4t',
-    name: 'SeamlessM4T',
-    category: 'translation',
-    status: 'installed',
-    version: '2.1.0',
-    sizeBytes: 4_800_000_000,
-    downloadProgress: null,
-  },
-  {
-    id: 'kokoro-v1',
-    name: 'Kokoro',
-    category: 'speech',
-    status: 'downloading',
-    version: '1.0.0',
-    sizeBytes: 1_200_000_000,
-    downloadProgress: 67,
-  },
-  {
-    id: 'whisper-medium',
-    name: 'Whisper Medium',
-    category: 'speech-to-text',
-    status: 'missing',
-    version: '3.0.0',
-    sizeBytes: 1_500_000_000,
-    downloadProgress: null,
   },
 ];

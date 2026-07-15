@@ -80,7 +80,8 @@ export interface Job {
 
 export type ModelCategory = 'speech-to-text' | 'translation' | 'speech';
 
-export type ModelStatus = 'installed' | 'downloading' | 'missing' | 'ready' | 'updating';
+export type ModelStatus =
+  'installed' | 'downloading' | 'verifying' | 'missing' | 'corrupted' | 'update-available';
 
 export interface Model {
   readonly id: string;
@@ -88,8 +89,11 @@ export interface Model {
   readonly category: ModelCategory;
   readonly status: ModelStatus;
   readonly version: string;
+  readonly latestVersion: string;
   readonly sizeBytes: number;
+  readonly checksum: string | null;
   readonly downloadProgress: number | null;
+  readonly requiredBy: readonly string[];
 }
 
 export type TranslationProfile = 'fast' | 'balanced' | 'studio';
@@ -198,6 +202,9 @@ export interface ModelService {
   downloadModel(id: string): Promise<Model>;
   deleteModel(id: string): Promise<void>;
   updateModel(id: string): Promise<Model>;
+  verifyModel(id: string): Promise<Model>;
+  repairModel(id: string): Promise<Model>;
+  subscribe(listener: () => void): () => void;
 }
 
 export interface SettingsService {
