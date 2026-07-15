@@ -6,7 +6,7 @@ import { compileWorkflow } from '../compiler/workflow-compiler';
 import { PipelineEngine } from '../engine/pipeline-engine';
 import { FileWorkflowStore } from '../persistence/workflow-store';
 import { DEFAULT_OUTPUT_CONFIGURATION } from '@dubforge/job-config';
-import { createProviderRegistry, registerFakeProviders } from '@dubforge/providers';
+import { createConfiguredExtensionRuntime } from '@dubforge/providers';
 import type { DagNode } from '../dag/types';
 import { createWorkflowEventBus } from '../events/event-bus';
 import { createWorkflowState } from '../runner/stage-runner';
@@ -27,8 +27,6 @@ async function createArtifactRoot(): Promise<string> {
 describe('PipelineEngine', () => {
   it('executes a workflow with fake providers and persists state', async () => {
     const artifactRoot = await createArtifactRoot();
-    const registry = createProviderRegistry();
-    registerFakeProviders(registry);
 
     const graph = compileWorkflow({
       workflowId: 'wf-engine',
@@ -54,10 +52,11 @@ describe('PipelineEngine', () => {
     });
 
     const runner = {
-      run: async (node: DagNode) => ({
-        artifacts: { [node.id]: join(artifactRoot, `${node.id}.json`) },
-        durationMs: 5,
-      }),
+      run: (node: DagNode) =>
+        Promise.resolve({
+          artifacts: { [node.id]: join(artifactRoot, `${node.id}.json`) },
+          durationMs: 5,
+        }),
     };
 
     const finalState = await scheduler.execute(state, runner, {
@@ -80,13 +79,12 @@ describe('PipelineEngine', () => {
     expect(persisted?.status).toBe('completed');
   });
 
-  it('starts workflows through the engine facade', async () => {
+  it('starts workflows through the engine facade using extension capabilities', async () => {
     const artifactRoot = await createArtifactRoot();
-    const registry = createProviderRegistry();
-    registerFakeProviders(registry);
+    const runtime = await createConfiguredExtensionRuntime();
 
     const engine = new PipelineEngine({
-      registry,
+      runtime,
       store: new FileWorkflowStore(),
       maxConcurrency: 2,
     });

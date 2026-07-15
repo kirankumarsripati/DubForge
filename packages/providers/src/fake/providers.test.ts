@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { NODE_KINDS } from '@dubforge/types';
-import type { StageExecutionContext } from '../types';
+import type { StageExecutionContext } from '../stage/types';
 import { createFakeValidateProvider } from './providers';
 
 const tempDirs: string[] = [];

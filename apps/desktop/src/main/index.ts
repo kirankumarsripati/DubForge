@@ -1,6 +1,6 @@
 import { app, BrowserWindow, shell } from 'electron';
 import { join } from 'node:path';
-import { createApplicationContainer } from './container';
+import { initializeApplicationContainer } from './container';
 import { registerPipelineIpcHandlers } from './ipc/pipeline-handlers';
 import {
   registerPrivilegedSchemes,
@@ -46,10 +46,10 @@ function createWindow(): void {
   }
 }
 
-void app.whenReady().then(() => {
+void app.whenReady().then(async () => {
   app.setName('DubForge');
 
-  const container = createApplicationContainer();
+  const container = await initializeApplicationContainer();
   registerThumbnailProtocol(container);
   registerVideoIpcHandlers(container);
   registerPipelineIpcHandlers(container);

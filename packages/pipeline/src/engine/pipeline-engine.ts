@@ -1,4 +1,4 @@
-import type { ProviderRegistry } from '@dubforge/providers';
+import type { ExtensionRuntime } from '@dubforge/providers';
 import type { Job, PipelineStageStatus, WorkflowTimelineNode } from '@dubforge/types';
 import { compileWorkflow, type WorkflowCompileInput } from '../compiler/workflow-compiler';
 import { validateDagGraph } from '../dag/validator';
@@ -10,7 +10,7 @@ import { createStageRunner, createWorkflowState, type StageRunner } from '../run
 import { Scheduler, type SchedulerInput } from '../scheduler/scheduler';
 
 export interface PipelineEngineOptions {
-  readonly registry: ProviderRegistry;
+  readonly runtime: ExtensionRuntime;
   readonly store: WorkflowStore;
   readonly maxConcurrency?: number;
 }
@@ -195,7 +195,7 @@ export class PipelineEngine {
   private activeState: WorkflowState | null = null;
 
   constructor(private readonly options: PipelineEngineOptions) {
-    this.runner = createStageRunner(options.registry);
+    this.runner = createStageRunner(options.runtime);
   }
 
   getEventBus(): WorkflowEventBus {

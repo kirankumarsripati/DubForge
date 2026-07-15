@@ -3,7 +3,7 @@ import type { ServiceContainer } from '@dubforge/shared';
 import { app } from 'electron';
 import { join } from 'node:path';
 import { FfprobeService } from './services/ffprobe-service';
-import { PipelineJobService } from './services/pipeline-job-service';
+import { createPipelineJobService, type PipelineJobService } from './services/pipeline-job-service';
 import { getRecentFilesStorePath, RecentFilesService } from './services/recent-files-service';
 import { ThumbnailService } from './services/thumbnail-service';
 import { VideoCacheService } from './services/video-cache-service';
@@ -41,12 +41,16 @@ export function createApplicationContainer(): ServiceContainer {
       createThumbnailUrl,
     );
   });
-  container.registerSingleton(PIPELINE_JOB_SERVICE_TOKEN, () => {
-    return new PipelineJobService(
-      container.resolve(VIDEO_CACHE_SERVICE_TOKEN),
-      join(userDataPath, 'jobs'),
-    );
-  });
 
+  return container;
+}
+
+export async function initializeApplicationContainer(): Promise<ServiceContainer> {
+  const container = createApplicationContainer();
+  const pipelineService = await createPipelineJobService(
+    container.resolve(VIDEO_CACHE_SERVICE_TOKEN),
+    join(app.getPath('userData'), 'jobs'),
+  );
+  container.registerSingleton(PIPELINE_JOB_SERVICE_TOKEN, () => pipelineService);
   return container;
 }

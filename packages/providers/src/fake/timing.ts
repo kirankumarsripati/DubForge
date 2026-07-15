@@ -34,7 +34,7 @@ export function getSimulatedDurationMs(
   return Math.round(base * profileMultiplier * durationFactor);
 }
 
-import type { CancellationSignal } from '../types';
+import type { CancellationSignal } from '../stage/types';
 
 export function sleep(ms: number, signal: CancellationSignal): Promise<void> {
   return new Promise((resolve, reject) => {

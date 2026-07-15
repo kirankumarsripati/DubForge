@@ -35,16 +35,3 @@ export interface StageExecutionResult {
   readonly artifacts: Readonly<Record<string, string>>;
   readonly durationMs: number;
 }
-
-export interface StageProvider {
-  initialize(context: StageExecutionContext): Promise<void>;
-  execute(context: StageExecutionContext): Promise<StageExecutionResult>;
-  validate(result: StageExecutionResult): Promise<void>;
-  cleanup(): Promise<void>;
-}
-
-export interface ProviderRegistry {
-  register(kind: NodeKind, provider: StageProvider): void;
-  resolve(kind: NodeKind): StageProvider;
-  has(kind: NodeKind): boolean;
-}

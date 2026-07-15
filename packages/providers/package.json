@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@dubforge/job-config": "workspace:*",
-    "@dubforge/types": "workspace:*"
+    "@dubforge/types": "workspace:*",
+    "zod": "^3.25.67"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

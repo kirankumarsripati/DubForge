@@ -4,7 +4,11 @@ import {
   workflowStateToJob,
   type StartWorkflowRequest,
 } from '@dubforge/pipeline';
-import { createProviderRegistry, registerFakeProviders } from '@dubforge/providers';
+import {
+  createExtensionRuntime,
+  loadBuiltinExtensions,
+  type ExtensionRuntime,
+} from '@dubforge/providers';
 import type { Job, StartJobRequest } from '@dubforge/types';
 import { createAppId } from '@dubforge/shared';
 import type { PipelineEventPayload } from '@dubforge/shared';
@@ -23,12 +27,10 @@ export class PipelineJobService {
   constructor(
     private readonly cacheService: VideoCacheService,
     private readonly jobsRoot: string,
+    runtime: ExtensionRuntime,
   ) {
-    const registry = createProviderRegistry();
-    registerFakeProviders(registry);
-
     this.engine = new PipelineEngine({
-      registry,
+      runtime,
       store: new FileWorkflowStore(),
       maxConcurrency: 4,
     });
@@ -166,4 +168,13 @@ export class PipelineJobService {
       request.outputDirectory,
     );
   }
+}
+
+export async function createPipelineJobService(
+  cacheService: VideoCacheService,
+  jobsRoot: string,
+): Promise<PipelineJobService> {
+  const runtime = createExtensionRuntime();
+  await loadBuiltinExtensions(runtime);
+  return new PipelineJobService(cacheService, jobsRoot, runtime);
 }

@@ -1,7 +1,8 @@
-import type {
-  ProviderRegistry,
-  StageExecutionContext,
-  StageExecutionResult,
+import {
+  PIPELINE_STAGE_CAPABILITY,
+  type ExtensionRuntime,
+  type StageExecutionContext,
+  type StageExecutionResult,
 } from '@dubforge/providers';
 import type { DagNode, NodeExecutionState, NodeId, WorkflowState } from '../dag/types';
 import { NODE_STATUSES } from '../dag/types';
@@ -14,18 +15,18 @@ export interface StageRunner {
   ): Promise<StageExecutionResult>;
 }
 
-export function createStageRunner(registry: ProviderRegistry): StageRunner {
+export function createStageRunner(runtime: ExtensionRuntime): StageRunner {
   return {
     async run(
       node: DagNode,
-      state: WorkflowState,
+      _state: WorkflowState,
       context: StageExecutionContext,
     ): Promise<StageExecutionResult> {
-      const provider = registry.resolve(node.kind);
-      await provider.initialize(context);
-      const result = await provider.execute(context);
-      await provider.validate(result);
-      await provider.cleanup();
+      const handler = runtime.resolveCapability(PIPELINE_STAGE_CAPABILITY, node.kind);
+      await handler.initialize(context);
+      const result = await handler.execute(context);
+      await handler.validate(result);
+      await handler.cleanup();
       return result;
     },
   };

@@ -1,5 +1,6 @@
 import { NODE_KINDS, type NodeKind } from '@dubforge/types';
-import type { StageExecutionContext, StageExecutionResult, StageProvider } from '../types';
+import type { PipelineStageCapabilityHandler } from '../capabilities/pipeline-stage';
+import type { StageExecutionContext, StageExecutionResult } from '../stage/types';
 import { createPlaceholderJson, writePlaceholderArtifact } from './artifact-writer';
 import { simulateWork } from './timing';
 
@@ -8,7 +9,7 @@ function createBaseProvider(
   artifactKey: string,
   relativePath: string,
   buildContent: (context: StageExecutionContext) => string,
-): StageProvider {
+): PipelineStageCapabilityHandler {
   return {
     initialize(): Promise<void> {
       return Promise.resolve();
@@ -46,7 +47,7 @@ function createBaseProvider(
   };
 }
 
-export function createFakeValidateProvider(): StageProvider {
+export function createFakeValidateProvider(): PipelineStageCapabilityHandler {
   return createBaseProvider(NODE_KINDS.VALIDATE, 'validation', 'validation.json', (context) =>
     createPlaceholderJson('validation', {
       videoPath: context.videoPath,
@@ -56,7 +57,7 @@ export function createFakeValidateProvider(): StageProvider {
   );
 }
 
-export function createFakeFingerprintProvider(): StageProvider {
+export function createFakeFingerprintProvider(): PipelineStageCapabilityHandler {
   return createBaseProvider(NODE_KINDS.FINGERPRINT, 'fingerprint', 'video.hash', (context) =>
     createPlaceholderJson('fingerprint', {
       algorithm: 'sha256',
@@ -65,7 +66,7 @@ export function createFakeFingerprintProvider(): StageProvider {
   );
 }
 
-export function createFakeMetadataProvider(): StageProvider {
+export function createFakeMetadataProvider(): PipelineStageCapabilityHandler {
   return createBaseProvider(NODE_KINDS.METADATA, 'metadata', 'metadata.json', (context) =>
     createPlaceholderJson('metadata', {
       durationSeconds: context.durationSeconds,
@@ -75,7 +76,7 @@ export function createFakeMetadataProvider(): StageProvider {
   );
 }
 
-export function createFakeExtractAudioProvider(): StageProvider {
+export function createFakeExtractAudioProvider(): PipelineStageCapabilityHandler {
   return createBaseProvider(
     NODE_KINDS.EXTRACT_AUDIO,
     'audio',
@@ -84,7 +85,7 @@ export function createFakeExtractAudioProvider(): StageProvider {
   );
 }
 
-export function createFakeSpeechRecognitionProvider(): StageProvider {
+export function createFakeSpeechRecognitionProvider(): PipelineStageCapabilityHandler {
   return createBaseProvider(
     NODE_KINDS.SPEECH_RECOGNITION,
     'transcript',
@@ -106,7 +107,7 @@ export function createFakeSpeechRecognitionProvider(): StageProvider {
   );
 }
 
-export function createFakeEnglishTranscriptProvider(): StageProvider {
+export function createFakeEnglishTranscriptProvider(): PipelineStageCapabilityHandler {
   return createBaseProvider(
     NODE_KINDS.ENGLISH_TRANSCRIPT,
     'englishTranscript',
@@ -115,7 +116,7 @@ export function createFakeEnglishTranscriptProvider(): StageProvider {
   );
 }
 
-export function createFakeEnglishSubtitleProvider(): StageProvider {
+export function createFakeEnglishSubtitleProvider(): PipelineStageCapabilityHandler {
   return createBaseProvider(NODE_KINDS.ENGLISH_SUBTITLE, 'englishSubtitle', 'english.srt', () =>
     [
       '1',
@@ -130,7 +131,7 @@ export function createFakeEnglishSubtitleProvider(): StageProvider {
   );
 }
 
-export function createFakeTranslateProvider(): StageProvider {
+export function createFakeTranslateProvider(): PipelineStageCapabilityHandler {
   return {
     initialize(): Promise<void> {
       return Promise.resolve();
@@ -173,7 +174,7 @@ export function createFakeTranslateProvider(): StageProvider {
   };
 }
 
-export function createFakeSubtitleProvider(): StageProvider {
+export function createFakeSubtitleProvider(): PipelineStageCapabilityHandler {
   return {
     initialize(): Promise<void> {
       return Promise.resolve();
@@ -215,7 +216,7 @@ export function createFakeSubtitleProvider(): StageProvider {
   };
 }
 
-export function createFakeSpeechProvider(): StageProvider {
+export function createFakeSpeechProvider(): PipelineStageCapabilityHandler {
   return {
     initialize(): Promise<void> {
       return Promise.resolve();
@@ -255,7 +256,7 @@ export function createFakeSpeechProvider(): StageProvider {
   };
 }
 
-export function createFakeAlignProvider(): StageProvider {
+export function createFakeAlignProvider(): PipelineStageCapabilityHandler {
   return {
     initialize(): Promise<void> {
       return Promise.resolve();
@@ -295,7 +296,7 @@ export function createFakeAlignProvider(): StageProvider {
   };
 }
 
-export function createFakeMuxProvider(): StageProvider {
+export function createFakeMuxProvider(): PipelineStageCapabilityHandler {
   return createBaseProvider(NODE_KINDS.MUX, 'output', 'movie.mkv', (context) =>
     createPlaceholderJson('mux', {
       container: context.output.containerFormat,
@@ -304,13 +305,13 @@ export function createFakeMuxProvider(): StageProvider {
   );
 }
 
-export function createFakeVerifyProvider(): StageProvider {
+export function createFakeVerifyProvider(): PipelineStageCapabilityHandler {
   return createBaseProvider(NODE_KINDS.VERIFY, 'verification', 'verification.json', () =>
     createPlaceholderJson('verification', { playable: true, tracksVerified: true }),
   );
 }
 
-export function createFakeManifestProvider(): StageProvider {
+export function createFakeManifestProvider(): PipelineStageCapabilityHandler {
   return createBaseProvider(NODE_KINDS.MANIFEST, 'manifest', 'manifest.json', (context) =>
     createPlaceholderJson('manifest', {
       jobId: context.jobId,
