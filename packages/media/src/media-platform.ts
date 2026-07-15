@@ -16,11 +16,13 @@ import { FixtureMuxAdapter } from './adapters/ffmpeg/fixture-mux-adapter.js';
 import { FixtureProbeAdapter } from './adapters/ffmpeg/fixture-probe-adapter.js';
 import { resolveGoldenFixturePath } from './integration/adapter-registry.js';
 import { MediaApplication } from './application/media-application.js';
+import { ImportMediaService } from './application/import-media-service.js';
 import {
   ExtractAudioService,
   MuxMediaService,
   ProbeMediaService,
 } from './application/media-services.js';
+import { FfprobeDiagnosticsCollector } from './diagnostics/ffprobe-diagnostics.js';
 import { MediaDiagnostics } from './diagnostics/media-diagnostics.js';
 import { MediaExecutionAdapter } from './integration/media-execution-adapter.js';
 import type { ExtractAudioPort, MuxMediaPort, ProbeMediaPort } from './ports/media-ports.js';
@@ -49,6 +51,8 @@ export interface MediaPlatform {
   readonly application: MediaApplication;
   readonly repository: MediaRepository;
   readonly diagnostics: MediaDiagnostics;
+  readonly ffprobeDiagnostics: FfprobeDiagnosticsCollector;
+  readonly importService: ImportMediaService;
   createExecutionAdapter(): MediaExecutionAdapter;
   close(): void;
 }
@@ -108,6 +112,15 @@ export function createMediaPlatform(options: MediaPlatformOptions): MediaPlatfor
   });
 
   const application = new MediaApplication(probeService, extractService, muxService);
+  const executionAdapter = new MediaExecutionAdapter(application);
+  const ffprobeDiagnostics = new FfprobeDiagnosticsCollector();
+  const importService = new ImportMediaService({
+    eventBus: options.eventBus,
+    executionAdapter,
+    repository,
+    ffprobeDiagnostics,
+    artifactSink: options.artifactSink,
+  });
 
   options.eventBus.subscribeToType(MEDIA_EVENTS.DIAGNOSTIC_RECORDED, (event) => {
     if ('level' in event && 'message' in event && 'nodeId' in event) {
@@ -124,8 +137,10 @@ export function createMediaPlatform(options: MediaPlatformOptions): MediaPlatfor
     application,
     repository,
     diagnostics,
+    ffprobeDiagnostics,
+    importService,
     createExecutionAdapter(): MediaExecutionAdapter {
-      return new MediaExecutionAdapter(application);
+      return executionAdapter;
     },
     close(): void {
       db.close();

@@ -25,4 +25,8 @@ export const mockVideoService: VideoService = {
   openRecentFile(): Promise<VideoMetadata> {
     return Promise.resolve(MOCK_SAMPLE_VIDEO);
   },
+
+  getFfprobeDiagnostics() {
+    return Promise.resolve([]);
+  },
 };

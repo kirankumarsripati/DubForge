@@ -29,10 +29,30 @@ export const recentVideoFileResponseSchema = z.object({
   thumbnailUrl: z.string().nullable(),
 });
 
+export const ffprobeDiagnosticsSchema = z.object({
+  executablePath: z.string().min(1),
+  args: z.array(z.string()),
+  command: z.string().min(1),
+  exitCode: z.number().int().nullable(),
+  stderr: z.string(),
+});
+
+export const ffprobeDiagnosticRecordSchema = z.object({
+  timestamp: z.string().min(1),
+  success: z.boolean(),
+  filePath: z.string().min(1),
+  diagnostics: ffprobeDiagnosticsSchema,
+  message: z.string().nullable(),
+});
+
+export const ffprobeDiagnosticsResponseSchema = z.array(ffprobeDiagnosticRecordSchema);
+
 export const videoImportErrorResponseSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
   recoveryAction: z.string().min(1),
+  code: z.string().optional(),
+  ffprobeDiagnostics: ffprobeDiagnosticsSchema.optional(),
 });
 
 export type InspectVideoFileRequest = z.infer<typeof inspectVideoFileRequestSchema>;
@@ -40,6 +60,8 @@ export type OpenRecentVideoRequest = z.infer<typeof openRecentVideoRequestSchema
 export type VideoMetadataResponse = z.infer<typeof videoMetadataResponseSchema>;
 export type RecentVideoFileResponse = z.infer<typeof recentVideoFileResponseSchema>;
 export type VideoImportErrorResponse = z.infer<typeof videoImportErrorResponseSchema>;
+export type FfprobeDiagnosticsResponse = z.infer<typeof ffprobeDiagnosticsResponseSchema>;
+export type FfprobeDiagnosticRecordResponse = z.infer<typeof ffprobeDiagnosticRecordSchema>;
 export type VideoImportResult =
   | { readonly ok: true; readonly data: VideoMetadataResponse }
   | { readonly ok: false; readonly error: VideoImportErrorResponse };

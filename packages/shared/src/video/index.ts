@@ -10,11 +10,20 @@ export {
 } from './constants';
 export { ffprobeOutputSchema, type FfprobeOutput } from './ffprobe-schema';
 export { parseFfprobeOutput } from './ffprobe-parser';
+export {
+  FfprobeExecutionError,
+  FfprobeParseError,
+  buildFfprobeArgs,
+  formatFfprobeDiagnostics,
+  type FfprobeDiagnostics,
+} from './ffprobe-diagnostics';
 export { toVideoMetadata } from './metadata';
 export { calculateThumbnailTimestampSeconds } from './thumbnail';
 export type { CachedVideoRecord, VideoFileStats, VideoProbeResult, VideoStreamInfo } from './types';
 export {
+  createFfprobeValidationFailure,
   createValidationFailure,
+  VideoValidationException,
   validateVideoExtension,
   validateVideoFileStats,
   validateVideoProbe,

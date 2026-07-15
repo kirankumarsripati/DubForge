@@ -76,4 +76,25 @@ export const MIGRATION_001_MEDIA_CATALOG: Migration = {
   },
 };
 
-export const MEDIA_MIGRATIONS: readonly Migration[] = [MIGRATION_001_MEDIA_CATALOG];
+export const MIGRATION_002_MEDIA_IMPORT: Migration = {
+  version: 2,
+  name: 'media-import-fields',
+  up: (db) => {
+    db.exec(`
+      ALTER TABLE media_files ADD COLUMN content_hash TEXT;
+      ALTER TABLE media_files ADD COLUMN file_size_bytes INTEGER;
+      ALTER TABLE media_files ADD COLUMN file_modified_at_ms INTEGER;
+      ALTER TABLE media_files ADD COLUMN frame_rate REAL;
+      ALTER TABLE media_files ADD COLUMN metadata_artifact_path TEXT;
+
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_media_files_content_hash
+        ON media_files(content_hash)
+        WHERE content_hash IS NOT NULL;
+    `);
+  },
+};
+
+export const MEDIA_MIGRATIONS: readonly Migration[] = [
+  MIGRATION_001_MEDIA_CATALOG,
+  MIGRATION_002_MEDIA_IMPORT,
+];

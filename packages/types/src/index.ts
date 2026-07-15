@@ -131,10 +131,20 @@ export interface RecentVideoFile {
   readonly thumbnailUrl: string | null;
 }
 
+export interface FfprobeDiagnostics {
+  readonly executablePath: string;
+  readonly args: readonly string[];
+  readonly command: string;
+  readonly exitCode: number | null;
+  readonly stderr: string;
+}
+
 export interface VideoImportError {
   readonly title: string;
   readonly description: string;
   readonly recoveryAction: string;
+  readonly code?: string;
+  readonly ffprobeDiagnostics?: FfprobeDiagnostics;
 }
 
 export interface LocalizationLanguage {
@@ -210,4 +220,21 @@ export interface VideoService {
   inspectFile(filePath: string): Promise<VideoMetadata>;
   listRecentFiles(): Promise<readonly RecentVideoFile[]>;
   openRecentFile(id: string): Promise<VideoMetadata>;
+  getFfprobeDiagnostics(): Promise<readonly FfprobeDiagnosticRecord[]>;
+}
+
+export interface FfprobeDiagnosticRecord {
+  readonly timestamp: string;
+  readonly success: boolean;
+  readonly filePath: string;
+  readonly diagnostics: FfprobeDiagnostics;
+  readonly message: string | null;
+}
+
+export interface FfprobeDiagnostics {
+  readonly executablePath: string;
+  readonly args: readonly string[];
+  readonly command: string;
+  readonly exitCode: number | null;
+  readonly stderr: string;
 }

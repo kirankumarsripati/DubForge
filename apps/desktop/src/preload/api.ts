@@ -10,6 +10,7 @@ export function createDubForgeApi(): DubForgeApi {
       inspectFile: (filePath) => ipcRenderer.invoke(VIDEO_IPC_CHANNELS.INSPECT_FILE, { filePath }),
       listRecentFiles: () => ipcRenderer.invoke(VIDEO_IPC_CHANNELS.LIST_RECENT),
       openRecentFile: (id) => ipcRenderer.invoke(VIDEO_IPC_CHANNELS.OPEN_RECENT, { id }),
+      getFfprobeDiagnostics: () => ipcRenderer.invoke(VIDEO_IPC_CHANNELS.GET_FFPROBE_DIAGNOSTICS),
     },
     files: {
       getPathForFile: (file) => webUtils.getPathForFile(file),

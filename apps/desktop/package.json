@@ -18,7 +18,10 @@
   },
   "dependencies": {
     "@dubforge/job-config": "workspace:*",
+    "@dubforge/media": "workspace:*",
     "@dubforge/pipeline": "workspace:*",
+    "@dubforge/platform-artifact": "workspace:*",
+    "@dubforge/platform-events": "workspace:*",
     "@dubforge/platform-runtime": "workspace:*",
     "@dubforge/shared": "workspace:*",
     "@dubforge/types": "workspace:*",

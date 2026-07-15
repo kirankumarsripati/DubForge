@@ -1,3 +1,5 @@
+import type { FfprobeDiagnostics } from '@dubforge/shared';
+
 import type { MediaFile } from '../domain/entities/media-entities.js';
 import type { Duration } from '../domain/value-objects/duration.js';
 import type { Resolution } from '../domain/value-objects/resolution.js';
@@ -18,6 +20,7 @@ export interface ProbeMediaResult {
   readonly artifactPath: string;
   readonly probeJson: string;
   readonly durationMs: number;
+  readonly diagnostics?: FfprobeDiagnostics;
 }
 
 export interface ProbeMediaPort {

@@ -20,6 +20,7 @@
   "dependencies": {
     "@dubforge/job-config": "workspace:*",
     "@dubforge/platform-events": "workspace:*",
+    "@dubforge/platform-execution": "workspace:*",
     "@dubforge/platform-execution-adapters": "workspace:*",
     "@dubforge/providers": "workspace:*",
     "@dubforge/shared": "workspace:*",

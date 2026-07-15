@@ -2,14 +2,19 @@ import { createServiceContainer, createToken } from '@dubforge/shared';
 import type { ServiceContainer } from '@dubforge/shared';
 import { app } from 'electron';
 import { join } from 'node:path';
-import { FfprobeService } from './services/ffprobe-service';
+
+import {
+  createDesktopMediaStack,
+  resolveFfprobePath,
+  type DesktopMediaStack,
+} from './services/desktop-media-stack';
 import { createPipelineJobService, type PipelineJobService } from './services/pipeline-job-service';
 import { getRecentFilesStorePath, RecentFilesService } from './services/recent-files-service';
 import { ThumbnailService } from './services/thumbnail-service';
 import { VideoCacheService } from './services/video-cache-service';
 import { VideoImportService } from './services/video-import-service';
 
-export const FFPROBE_SERVICE_TOKEN = createToken<FfprobeService>('FfprobeService');
+export const DESKTOP_MEDIA_STACK_TOKEN = createToken<DesktopMediaStack>('DesktopMediaStack');
 export const VIDEO_CACHE_SERVICE_TOKEN = createToken<VideoCacheService>('VideoCacheService');
 export const THUMBNAIL_SERVICE_TOKEN = createToken<ThumbnailService>('ThumbnailService');
 export const RECENT_FILES_SERVICE_TOKEN = createToken<RecentFilesService>('RecentFilesService');
@@ -25,7 +30,12 @@ export function createApplicationContainer(): ServiceContainer {
   const userDataPath = app.getPath('userData');
   const cacheRoot = join(userDataPath, 'cache');
 
-  container.registerSingleton(FFPROBE_SERVICE_TOKEN, () => new FfprobeService('ffprobe'));
+  container.registerSingleton(DESKTOP_MEDIA_STACK_TOKEN, () =>
+    createDesktopMediaStack({
+      userDataPath,
+      ffprobePath: resolveFfprobePath(),
+    }),
+  );
   container.registerSingleton(VIDEO_CACHE_SERVICE_TOKEN, () => new VideoCacheService(cacheRoot));
   container.registerSingleton(THUMBNAIL_SERVICE_TOKEN, () => new ThumbnailService());
   container.registerSingleton(
@@ -33,11 +43,14 @@ export function createApplicationContainer(): ServiceContainer {
     () => new RecentFilesService(getRecentFilesStorePath(userDataPath)),
   );
   container.registerSingleton(VIDEO_IMPORT_SERVICE_TOKEN, () => {
+    const mediaStack = container.resolve(DESKTOP_MEDIA_STACK_TOKEN);
     return new VideoImportService(
-      container.resolve(FFPROBE_SERVICE_TOKEN),
+      mediaStack.mediaPlatform.importService,
+      mediaStack.mediaPlatform.ffprobeDiagnostics,
       container.resolve(VIDEO_CACHE_SERVICE_TOKEN),
       container.resolve(THUMBNAIL_SERVICE_TOKEN),
       container.resolve(RECENT_FILES_SERVICE_TOKEN),
+      mediaStack.artifactRoot,
       createThumbnailUrl,
     );
   });
@@ -53,4 +66,8 @@ export function initializeApplicationContainer(): ServiceContainer {
   );
   container.registerSingleton(PIPELINE_JOB_SERVICE_TOKEN, () => pipelineService);
   return container;
+}
+
+export function disposeApplicationContainer(container: ServiceContainer): void {
+  container.resolve(DESKTOP_MEDIA_STACK_TOKEN).close();
 }

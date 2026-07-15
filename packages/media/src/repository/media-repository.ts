@@ -24,6 +24,11 @@ interface MediaFileRow {
   readonly probedAt: string;
   readonly workflowId: string | null;
   readonly jobId: string | null;
+  readonly contentHash: string | null;
+  readonly fileSizeBytes: number | null;
+  readonly fileModifiedAtMs: number | null;
+  readonly frameRate: number | null;
+  readonly metadataArtifactPath: string | null;
 }
 
 interface MediaOperationRow {
@@ -52,6 +57,11 @@ export interface CreateMediaFileInput {
   readonly bitrateKbps: number;
   readonly workflowId: string;
   readonly jobId: string;
+  readonly contentHash?: string | null;
+  readonly fileSizeBytes?: number | null;
+  readonly fileModifiedAtMs?: number | null;
+  readonly frameRate?: number | null;
+  readonly metadataArtifactPath?: string | null;
 }
 
 export interface CreateMediaOperationInput {
@@ -102,14 +112,18 @@ export class MediaRepository {
   private readonly selectMediaFileByWorkflow: Database.Statement;
   private readonly selectOperationsByWorkflow: Database.Statement;
 
+  private readonly selectMediaFileByContentHash: Database.Statement;
+
   constructor(private readonly db: Database.Database) {
     this.insertMediaFile = db.prepare(`
       INSERT INTO media_files (
         id, file_path, filename, container, duration_seconds, width, height,
-        video_codec, audio_track_count, bitrate_kbps, probed_at, workflow_id, job_id
+        video_codec, audio_track_count, bitrate_kbps, probed_at, workflow_id, job_id,
+        content_hash, file_size_bytes, file_modified_at_ms, frame_rate, metadata_artifact_path
       ) VALUES (
         @id, @filePath, @filename, @container, @durationSeconds, @width, @height,
-        @videoCodec, @audioTrackCount, @bitrateKbps, @probedAt, @workflowId, @jobId
+        @videoCodec, @audioTrackCount, @bitrateKbps, @probedAt, @workflowId, @jobId,
+        @contentHash, @fileSizeBytes, @fileModifiedAtMs, @frameRate, @metadataArtifactPath
       )
     `);
 
@@ -146,9 +160,40 @@ export class MediaRepository {
         bitrate_kbps AS bitrateKbps,
         probed_at AS probedAt,
         workflow_id AS workflowId,
-        job_id AS jobId
+        job_id AS jobId,
+        content_hash AS contentHash,
+        file_size_bytes AS fileSizeBytes,
+        file_modified_at_ms AS fileModifiedAtMs,
+        frame_rate AS frameRate,
+        metadata_artifact_path AS metadataArtifactPath
       FROM media_files
       WHERE workflow_id = ?
+      ORDER BY probed_at DESC
+      LIMIT 1
+    `);
+
+    this.selectMediaFileByContentHash = db.prepare(`
+      SELECT
+        id,
+        file_path AS filePath,
+        filename,
+        container,
+        duration_seconds AS durationSeconds,
+        width,
+        height,
+        video_codec AS videoCodec,
+        audio_track_count AS audioTrackCount,
+        bitrate_kbps AS bitrateKbps,
+        probed_at AS probedAt,
+        workflow_id AS workflowId,
+        job_id AS jobId,
+        content_hash AS contentHash,
+        file_size_bytes AS fileSizeBytes,
+        file_modified_at_ms AS fileModifiedAtMs,
+        frame_rate AS frameRate,
+        metadata_artifact_path AS metadataArtifactPath
+      FROM media_files
+      WHERE content_hash = ?
       ORDER BY probed_at DESC
       LIMIT 1
     `);
@@ -190,6 +235,11 @@ export class MediaRepository {
       probedAt,
       workflowId: input.workflowId,
       jobId: input.jobId,
+      contentHash: input.contentHash ?? null,
+      fileSizeBytes: input.fileSizeBytes ?? null,
+      fileModifiedAtMs: input.fileModifiedAtMs ?? null,
+      frameRate: input.frameRate ?? null,
+      metadataArtifactPath: input.metadataArtifactPath ?? null,
     });
 
     return mapMediaFileRow({
@@ -206,6 +256,11 @@ export class MediaRepository {
       probedAt,
       workflowId: input.workflowId,
       jobId: input.jobId,
+      contentHash: input.contentHash ?? null,
+      fileSizeBytes: input.fileSizeBytes ?? null,
+      fileModifiedAtMs: input.fileModifiedAtMs ?? null,
+      frameRate: input.frameRate ?? null,
+      metadataArtifactPath: input.metadataArtifactPath ?? null,
     });
   }
 
@@ -322,6 +377,11 @@ export class MediaRepository {
 
   findMediaFileByWorkflow(workflowId: string): MediaFile | null {
     const row = this.selectMediaFileByWorkflow.get(workflowId) as MediaFileRow | undefined;
+    return row === undefined ? null : mapMediaFileRow(row);
+  }
+
+  findMediaFileByContentHash(contentHash: string): MediaFile | null {
+    const row = this.selectMediaFileByContentHash.get(contentHash) as MediaFileRow | undefined;
     return row === undefined ? null : mapMediaFileRow(row);
   }
 

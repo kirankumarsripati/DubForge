@@ -7,6 +7,9 @@ export interface DubForgeVideoApi {
   inspectFile(filePath: string): Promise<VideoImportResult>;
   listRecentFiles(): Promise<readonly import('@dubforge/types').RecentVideoFile[]>;
   openRecentFile(id: string): Promise<VideoImportResult>;
+  getFfprobeDiagnostics(): Promise<
+    readonly import('./video-schemas').FfprobeDiagnosticRecordResponse[]
+  >;
 }
 
 export interface DubForgeFilesApi {

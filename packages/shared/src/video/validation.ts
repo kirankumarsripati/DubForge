@@ -4,6 +4,8 @@ import {
   SUPPORTED_VIDEO_CONTAINERS,
   SUPPORTED_VIDEO_EXTENSIONS,
 } from './constants';
+import type { FfprobeDiagnostics } from './ffprobe-diagnostics';
+import { formatFfprobeDiagnostics } from './ffprobe-diagnostics';
 import type { VideoFileStats, VideoProbeResult } from './types';
 
 export type VideoValidationCode =
@@ -14,16 +16,22 @@ export type VideoValidationCode =
   | 'missing-audio-stream'
   | 'file-too-large'
   | 'duration-too-long'
-  | 'unreadable';
+  | 'unreadable'
+  | 'ffprobe-failed'
+  | 'thumbnail-failed';
 
 export interface VideoValidationFailure {
   readonly code: VideoValidationCode;
   readonly title: string;
   readonly description: string;
   readonly recoveryAction: string;
+  readonly ffprobeDiagnostics?: FfprobeDiagnostics;
 }
 
-const VALIDATION_MESSAGES: Record<VideoValidationCode, Omit<VideoValidationFailure, 'code'>> = {
+const VALIDATION_MESSAGES: Record<
+  Exclude<VideoValidationCode, 'ffprobe-failed'>,
+  Omit<VideoValidationFailure, 'code' | 'ffprobeDiagnostics'>
+> = {
   'file-not-found': {
     title: 'File not found',
     description: 'The selected video file could not be found on disk.',
@@ -64,11 +72,45 @@ const VALIDATION_MESSAGES: Record<VideoValidationCode, Omit<VideoValidationFailu
     description: 'The file could not be inspected. It may be corrupt or incomplete.',
     recoveryAction: 'Verify the file plays correctly in another app, then try again.',
   },
+  'thumbnail-failed': {
+    title: 'Thumbnail generation failed',
+    description:
+      'The video was inspected successfully, but a preview thumbnail could not be created.',
+    recoveryAction: 'You can retry import or continue without a preview image.',
+  },
 };
 
 export function createValidationFailure(code: VideoValidationCode): VideoValidationFailure {
+  if (code === 'ffprobe-failed') {
+    return {
+      code,
+      title: 'Unable to read video',
+      description: 'ffprobe could not inspect this file.',
+      recoveryAction: 'Install FFmpeg, verify the file plays in another app, then try again.',
+    };
+  }
+
   const message = VALIDATION_MESSAGES[code];
   return { code, ...message };
+}
+
+export function createFfprobeValidationFailure(
+  diagnostics: FfprobeDiagnostics,
+): VideoValidationFailure {
+  return {
+    code: 'ffprobe-failed',
+    title: 'Unable to read video',
+    description: formatFfprobeDiagnostics(diagnostics),
+    recoveryAction: 'Install FFmpeg, verify the file plays in another app, then try again.',
+    ffprobeDiagnostics: diagnostics,
+  };
+}
+
+export class VideoValidationException extends Error {
+  constructor(readonly failure: VideoValidationFailure) {
+    super(failure.description);
+    this.name = 'VideoValidationException';
+  }
 }
 
 export function validateVideoExtension(filename: string): VideoValidationFailure | null {

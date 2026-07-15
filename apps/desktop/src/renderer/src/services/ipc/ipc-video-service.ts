@@ -1,4 +1,9 @@
-import type { RecentVideoFile, VideoMetadata, VideoService } from '@dubforge/types';
+import type {
+  FfprobeDiagnosticRecord,
+  RecentVideoFile,
+  VideoMetadata,
+  VideoService,
+} from '@dubforge/types';
 import { unwrapNullableVideoImportResult, unwrapVideoImportResult } from './video-import-result';
 
 export const ipcVideoService: VideoService = {
@@ -39,5 +44,14 @@ export const ipcVideoService: VideoService = {
 
     const result = await api.video.openRecentFile(id);
     return unwrapVideoImportResult(result);
+  },
+
+  async getFfprobeDiagnostics(): Promise<readonly FfprobeDiagnosticRecord[]> {
+    const api = window.dubforge;
+    if (api === undefined) {
+      return [];
+    }
+
+    return api.video.getFfprobeDiagnostics();
   },
 };

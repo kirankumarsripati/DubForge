@@ -1,7 +1,11 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { randomUUID } from 'node:crypto';
 
-import { ffprobeOutputSchema, parseFfprobeOutput } from '@dubforge/shared';
+import {
+  FfprobeExecutionError,
+  FfprobeParseError,
+  type FfprobeDiagnostics,
+} from '@dubforge/shared';
+import { probeVideoFile } from '@dubforge/shared/node/ffprobe';
 
 import { normalizeCodecName } from '../../domain/value-objects/codec.js';
 import { primaryContainerFormat } from '../../domain/value-objects/container-format.js';
@@ -9,9 +13,6 @@ import { createDuration } from '../../domain/value-objects/duration.js';
 import { createResolution } from '../../domain/value-objects/resolution.js';
 import type { ProbeMediaInput, ProbeMediaPort, ProbeMediaResult } from '../../ports/media-ports.js';
 import { createCodec } from '../../domain/value-objects/codec.js';
-import { randomUUID } from 'node:crypto';
-
-const execFileAsync = promisify(execFile);
 
 export interface FfmpegProbeAdapterOptions {
   readonly ffprobePath: string;
@@ -22,17 +23,33 @@ export class FfmpegProbeAdapter implements ProbeMediaPort {
 
   async probe(input: ProbeMediaInput): Promise<ProbeMediaResult> {
     const startedAt = Date.now();
-    const stdout = await this.runProbe(input.filePath);
-    const parsed = ffprobeOutputSchema.parse(JSON.parse(stdout));
-    const probeResult = parseFfprobeOutput(parsed);
-    const durationMs = Date.now() - startedAt;
+    let probeResult;
+    let diagnostics: FfprobeDiagnostics;
 
+    try {
+      const result = await probeVideoFile(this.options.ffprobePath, input.filePath);
+      probeResult = result.probe;
+      diagnostics = result.diagnostics;
+    } catch (error) {
+      if (error instanceof FfprobeExecutionError) {
+        throw error;
+      }
+
+      if (error instanceof FfprobeParseError) {
+        throw error;
+      }
+
+      throw error;
+    }
+
+    const durationMs = Date.now() - startedAt;
     const artifactPath = `${input.artifactRoot}/${input.nodeId}-metadata.json`;
     const probeJson = JSON.stringify(
       {
         adapter: 'ffmpeg-probe',
         filePath: input.filePath,
         probe: probeResult,
+        diagnostics,
         probedAt: new Date().toISOString(),
       },
       null,
@@ -59,31 +76,7 @@ export class FfmpegProbeAdapter implements ProbeMediaPort {
       artifactPath,
       probeJson,
       durationMs,
+      diagnostics,
     };
-  }
-
-  private async runProbe(filePath: string): Promise<string> {
-    const args = [
-      '-v',
-      'error',
-      '-print_format',
-      'json',
-      '-show_format',
-      '-show_streams',
-      filePath,
-    ];
-
-    try {
-      const { stdout } = await execFileAsync(this.options.ffprobePath, args, {
-        maxBuffer: 10 * 1024 * 1024,
-      });
-      return stdout;
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(error.message || 'ffprobe failed to inspect the media file.');
-      }
-
-      throw new Error('ffprobe failed to inspect the media file.');
-    }
   }
 }

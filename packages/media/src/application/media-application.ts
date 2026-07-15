@@ -6,6 +6,19 @@ import { NODE_KINDS, type NodeKind } from '@dubforge/types';
 
 import { ExtractAudioService, MuxMediaService, ProbeMediaService } from './media-services.js';
 
+function parseImportArtifactNumber(
+  artifacts: Readonly<Record<string, string>>,
+  key: string,
+): number | null {
+  const value = artifacts[key];
+  if (value === undefined) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 const MEDIA_NODE_KINDS = new Set<NodeKind>([
   NODE_KINDS.METADATA,
   NODE_KINDS.EXTRACT_AUDIO,
@@ -34,6 +47,8 @@ export class MediaApplication {
           nodeId: request.nodeId,
           artifactRoot: request.artifactRoot,
           artifactSink: request.artifactSink,
+          fileSizeBytes: parseImportArtifactNumber(request.artifacts, '__import_file_size'),
+          fileModifiedAtMs: parseImportArtifactNumber(request.artifacts, '__import_file_modified'),
         });
       case NODE_KINDS.EXTRACT_AUDIO:
         return this.extractService.extractForWorkflow({

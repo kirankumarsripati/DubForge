@@ -42,11 +42,20 @@ export { MediaRepository, type CreateMediaFileInput } from './repository/media-r
 
 export { MediaApplication } from './application/media-application.js';
 export {
+  ImportMediaService,
+  type ImportMediaProbeInput,
+  type ImportMediaProbeResult,
+} from './application/import-media-service.js';
+export {
   ProbeMediaService,
   ExtractAudioService,
   MuxMediaService,
 } from './application/media-services.js';
 
+export {
+  FfprobeDiagnosticsCollector,
+  type FfprobeDiagnosticRecord,
+} from './diagnostics/ffprobe-diagnostics.js';
 export { MediaDiagnostics, type MediaDiagnosticEntry } from './diagnostics/media-diagnostics.js';
 
 export { FfmpegProbeAdapter } from './adapters/ffmpeg/ffmpeg-probe-adapter.js';

@@ -18,6 +18,8 @@ function toImportFailure(videoImportError: VideoImportError): VideoImportResult 
     title: videoImportError.failure.title,
     description: videoImportError.failure.description,
     recoveryAction: videoImportError.failure.recoveryAction,
+    code: videoImportError.failure.code,
+    ffprobeDiagnostics: videoImportError.failure.ffprobeDiagnostics,
   });
 
   const failure: VideoImportResult = { ok: false, error: response };
@@ -130,5 +132,9 @@ export function registerVideoIpcHandlers(container: ServiceContainer): void {
       const metadata = await importService.openRecentFile(request.id);
       return videoMetadataResponseSchema.parse(metadata);
     });
+  });
+
+  ipcMain.handle(VIDEO_IPC_CHANNELS.GET_FFPROBE_DIAGNOSTICS, () => {
+    return importService.getFfprobeDiagnostics();
   });
 }

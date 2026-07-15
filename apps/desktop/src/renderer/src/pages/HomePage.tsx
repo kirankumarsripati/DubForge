@@ -1,8 +1,9 @@
 import { ErrorState } from '@dubforge/ui';
 import { MOCK_VOICES, setTranslationProfile, TRANSLATION_PROFILES } from '@dubforge/job-config';
-import type { TranslationProfile } from '@dubforge/types';
-import { useEffect, useMemo } from 'react';
+import type { FfprobeDiagnosticRecord, TranslationProfile } from '@dubforge/types';
+import { useEffect, useMemo, useState } from 'react';
 import { ActiveJobCard } from '../components/home/ActiveJobCard';
+import { FfprobeDiagnosticsPanel } from '../components/home/FfprobeDiagnosticsPanel';
 import { ImportCard } from '../components/home/ImportCard';
 import { LocalizationCard } from '../components/home/LocalizationCard';
 import { OutputOptionsCard } from '../components/home/OutputOptionsCard';
@@ -13,7 +14,7 @@ import { ReviewPanel } from '../components/home/ReviewPanel';
 import { VideoInfoCard } from '../components/home/VideoInfoCard';
 import { VoiceSelectionCard } from '../components/home/VoiceSelectionCard';
 import { PageHeader } from '../components/layout/PageHeader';
-import { pipelineService } from '../services';
+import { pipelineService, videoService } from '../services';
 import { estimationService } from '../services/job-config';
 import { useHomeStore } from '../stores/home-store';
 import { useSettingsStore } from '../stores/settings-store';
@@ -43,6 +44,23 @@ export function HomePage(): React.JSX.Element {
   const fetchRecentFiles = useHomeStore((state) => state.fetchRecentFiles);
   const syncOutputDirectory = useHomeStore((state) => state.syncOutputDirectory);
   const settings = useSettingsStore((state) => state.settings.data);
+  const [ffprobeDiagnostics, setFfprobeDiagnostics] = useState<readonly FfprobeDiagnosticRecord[]>(
+    [],
+  );
+
+  useEffect(() => {
+    if (importError === null) {
+      setFfprobeDiagnostics([]);
+      return;
+    }
+
+    void videoService
+      .getFfprobeDiagnostics()
+      .then(setFfprobeDiagnostics)
+      .catch(() => {
+        setFfprobeDiagnostics([]);
+      });
+  }, [importError]);
 
   useEffect(() => {
     void fetchActiveJob();
@@ -135,6 +153,7 @@ export function HomePage(): React.JSX.Element {
                 void selectVideo();
               }}
             />
+            <FfprobeDiagnosticsPanel importError={importError} diagnostics={ffprobeDiagnostics} />
           </div>
         ) : null}
 

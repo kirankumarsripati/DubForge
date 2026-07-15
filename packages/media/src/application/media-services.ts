@@ -1,5 +1,6 @@
 import type { ArtifactSink } from '@dubforge/platform-execution-adapters';
 import type { DomainEventBus } from '@dubforge/platform-events';
+import { FfprobeExecutionError, type VideoProbeResult } from '@dubforge/shared';
 import { PIPELINE_STAGE_CAPABILITY } from '@dubforge/providers';
 import type { ExtensionRuntime } from '@dubforge/providers';
 import { NODE_KINDS } from '@dubforge/types';
@@ -16,6 +17,77 @@ import {
   publishMediaOperationFailed,
   publishMediaOperationStarted,
 } from './media-event-publisher.js';
+
+const IMPORT_WORKFLOW_PREFIX = 'import:';
+
+function parseImportContentHash(workflowId: string): string | null {
+  if (!workflowId.startsWith(IMPORT_WORKFLOW_PREFIX)) {
+    return null;
+  }
+
+  const contentHash = workflowId.slice(IMPORT_WORKFLOW_PREFIX.length);
+  return contentHash.length > 0 ? contentHash : null;
+}
+
+function isFlatFixtureProbe(
+  probe:
+    | VideoProbeResult
+    | {
+        readonly container: string;
+        readonly durationSeconds: number;
+        readonly bitrateKbps: number;
+        readonly audioTrackCount: number;
+        readonly width?: number;
+        readonly height?: number;
+        readonly videoCodec?: string;
+        readonly videoStream?: VideoProbeResult['videoStream'];
+      },
+): probe is {
+  readonly container: string;
+  readonly durationSeconds: number;
+  readonly bitrateKbps: number;
+  readonly audioTrackCount: number;
+  readonly width?: number;
+  readonly height?: number;
+  readonly videoCodec?: string;
+} {
+  return !('videoStream' in probe) || probe.videoStream === undefined;
+}
+
+function parseProbePayload(probeJson: string): VideoProbeResult {
+  const payload = JSON.parse(probeJson) as {
+    readonly probe:
+      | VideoProbeResult
+      | {
+          readonly container: string;
+          readonly durationSeconds: number;
+          readonly bitrateKbps: number;
+          readonly audioTrackCount: number;
+          readonly width?: number;
+          readonly height?: number;
+          readonly videoCodec?: string;
+          readonly videoStream?: VideoProbeResult['videoStream'];
+        };
+  };
+
+  const probe = payload.probe;
+  if (!isFlatFixtureProbe(probe)) {
+    return probe;
+  }
+
+  return {
+    container: probe.container,
+    durationSeconds: probe.durationSeconds,
+    bitrateKbps: probe.bitrateKbps,
+    audioTrackCount: probe.audioTrackCount,
+    videoStream: {
+      codec: probe.videoCodec ?? 'Unknown',
+      width: probe.width ?? 0,
+      height: probe.height ?? 0,
+      frameRate: 0,
+    },
+  };
+}
 
 export interface ProbeMediaServiceOptions {
   readonly eventBus: DomainEventBus;
@@ -36,6 +108,8 @@ export class ProbeMediaService {
     readonly nodeId: string;
     readonly artifactRoot: string;
     readonly artifactSink?: ArtifactSink;
+    readonly fileSizeBytes?: number | null;
+    readonly fileModifiedAtMs?: number | null;
   }): Promise<{
     readonly artifacts: Readonly<Record<string, string>>;
     readonly durationMs: number;
@@ -79,6 +153,9 @@ export class ProbeMediaService {
         artifactRoot: input.artifactRoot,
       });
 
+      const probe = parseProbePayload(result.probeJson);
+      const contentHash = parseImportContentHash(input.workflowId);
+
       const mediaFile = this.options.repository.createMediaFile({
         filePath: result.mediaFile.filePath,
         filename: result.mediaFile.filename,
@@ -91,6 +168,11 @@ export class ProbeMediaService {
         bitrateKbps: result.mediaFile.bitrateKbps,
         workflowId: input.workflowId,
         jobId: input.jobId,
+        contentHash,
+        fileSizeBytes: input.fileSizeBytes ?? null,
+        fileModifiedAtMs: input.fileModifiedAtMs ?? null,
+        frameRate: probe.videoStream.frameRate,
+        metadataArtifactPath: result.artifactPath,
       });
 
       const sink = input.artifactSink ?? this.options.artifactSink;
@@ -129,6 +211,16 @@ export class ProbeMediaService {
     } catch (error) {
       const failed = this.options.repository.failOperation(operation.id);
       const message = error instanceof Error ? error.message : 'Media probe failed.';
+      if (error instanceof FfprobeExecutionError) {
+        publishMediaDiagnostic({
+          eventBus: this.options.eventBus,
+          workflowId: input.workflowId,
+          jobId: input.jobId,
+          nodeId: input.nodeId,
+          level: 'error',
+          message: error.diagnostics.stderr || error.message,
+        });
+      }
       publishMediaOperationFailed({
         eventBus: this.options.eventBus,
         workflowId: input.workflowId,

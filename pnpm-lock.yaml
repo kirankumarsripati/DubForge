@@ -50,9 +50,18 @@ importers:
       '@dubforge/job-config':
         specifier: workspace:*
         version: link:../../packages/job-config
+      '@dubforge/media':
+        specifier: workspace:*
+        version: link:../../packages/media
       '@dubforge/pipeline':
         specifier: workspace:*
         version: link:../../packages/pipeline
+      '@dubforge/platform-artifact':
+        specifier: workspace:*
+        version: link:../../packages/platform-artifact
+      '@dubforge/platform-events':
+        specifier: workspace:*
+        version: link:../../packages/platform-events
       '@dubforge/platform-runtime':
         specifier: workspace:*
         version: link:../../packages/platform-runtime
@@ -262,6 +271,9 @@ importers:
       '@dubforge/platform-events':
         specifier: workspace:*
         version: link:../platform-events
+      '@dubforge/platform-execution':
+        specifier: workspace:*
+        version: link:../platform-execution
       '@dubforge/platform-execution-adapters':
         specifier: workspace:*
         version: link:../platform-execution-adapters

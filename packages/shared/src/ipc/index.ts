@@ -22,6 +22,9 @@ export {
   recentVideoFileResponseSchema,
   videoImportErrorResponseSchema,
   videoMetadataResponseSchema,
+  ffprobeDiagnosticsSchema,
+  ffprobeDiagnosticsResponseSchema,
+  ffprobeDiagnosticRecordSchema,
   type InspectVideoFileRequest,
   type OpenRecentVideoRequest,
   type RecentVideoFileResponse,
@@ -29,4 +32,6 @@ export {
   videoImportResultSchema,
   type VideoImportResult,
   type VideoMetadataResponse,
+  type FfprobeDiagnosticRecordResponse,
+  type FfprobeDiagnosticsResponse,
 } from './video-schemas';

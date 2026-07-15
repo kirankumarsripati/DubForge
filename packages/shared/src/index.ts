@@ -45,7 +45,12 @@ export {
 export {
   calculateThumbnailTimestampSeconds,
   createValidationFailure,
+  createFfprobeValidationFailure,
   ffprobeOutputSchema,
+  FfprobeExecutionError,
+  FfprobeParseError,
+  formatFfprobeDiagnostics,
+  type FfprobeDiagnostics,
   MAX_RECENT_VIDEO_FILES,
   MAX_VIDEO_DURATION_SECONDS,
   MAX_VIDEO_FILE_SIZE_BYTES,
@@ -64,4 +69,5 @@ export {
   type VideoProbeResult,
   type VideoValidationCode,
   type VideoValidationFailure,
+  VideoValidationException,
 } from './video';
